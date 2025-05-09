@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func newEntryUserCredentialFromResourceModel(data *EntryUserCredentialResourceModel, userDetails dvls.EntryUserAuthDetails) dvls.EntryUserCredential {
+func newEntryUserCredentialFromResourceModel(data *EntryUserCredentialResourceModel) dvls.EntryUserCredential {
 	var tags []string
 
 	for _, v := range data.Tags {
@@ -14,15 +14,15 @@ func newEntryUserCredentialFromResourceModel(data *EntryUserCredentialResourceMo
 	}
 
 	entryusercredential := dvls.EntryUserCredential{
-		ID:                data.Id.ValueString(),
-		VaultId:           data.VaultId.ValueString(),
-		EntryName:         data.Name.ValueString(),
-		Description:       data.Description.ValueString(),
-		Credentials:       userDetails,
-		EntryFolderPath:   data.Folder.ValueString(),
-		ConnectionType:    dvls.ServerConnectionCredential,
-		ConnectionSubType: dvls.ServerConnectionSubTypeDefault,
-		Tags:              tags,
+		ID:          data.Id.ValueString(),
+		VaultId:     data.VaultId.ValueString(),
+		EntryName:   data.Name.ValueString(),
+		Description: data.Description.ValueString(),
+		Credentials: dvls.EntryCredentials{Username: data.Username.ValueString(), Password: data.Password.ValueString()},
+		Path:        data.Folder.ValueString(),
+		Type:        dvls.EntryTypeCredential,
+		SubType:     dvls.EntrySubTypeDefault,
+		Tags:        tags,
 	}
 	return entryusercredential
 }
@@ -34,8 +34,8 @@ func setEntryUserCredentialResourceModel(entryusercredential dvls.EntryUserCrede
 	model.VaultId = basetypes.NewStringValue(entryusercredential.VaultId)
 	model.Name = basetypes.NewStringValue(entryusercredential.EntryName)
 
-	if entryusercredential.Credentials.Password != nil && *entryusercredential.Credentials.Password != "" {
-		model.Password = basetypes.NewStringValue(*entryusercredential.Credentials.Password)
+	if entryusercredential.Credentials.Password != "" {
+		model.Password = basetypes.NewStringValue(entryusercredential.Credentials.Password)
 	}
 
 	if entryusercredential.Description != "" {
@@ -46,8 +46,8 @@ func setEntryUserCredentialResourceModel(entryusercredential dvls.EntryUserCrede
 		model.Username = basetypes.NewStringValue(entryusercredential.Credentials.Username)
 	}
 
-	if entryusercredential.EntryFolderPath != "" {
-		model.Folder = basetypes.NewStringValue(entryusercredential.EntryFolderPath)
+	if entryusercredential.Path != "" {
+		model.Folder = basetypes.NewStringValue(entryusercredential.Path)
 	}
 
 	if entryusercredential.Tags != nil {
@@ -70,8 +70,8 @@ func setEntryUserCredentialDataModel(entryusercredential dvls.EntryUserCredentia
 	model.VaultId = basetypes.NewStringValue(entryusercredential.VaultId)
 	model.Name = basetypes.NewStringValue(entryusercredential.EntryName)
 
-	if entryusercredential.Credentials.Password != nil && *entryusercredential.Credentials.Password != "" {
-		model.Password = basetypes.NewStringValue(*entryusercredential.Credentials.Password)
+	if entryusercredential.Credentials.Password != "" {
+		model.Password = basetypes.NewStringValue(entryusercredential.Credentials.Password)
 	}
 
 	if entryusercredential.Description != "" {
@@ -82,8 +82,8 @@ func setEntryUserCredentialDataModel(entryusercredential dvls.EntryUserCredentia
 		model.Username = basetypes.NewStringValue(entryusercredential.Credentials.Username)
 	}
 
-	if entryusercredential.EntryFolderPath != "" {
-		model.Folder = basetypes.NewStringValue(entryusercredential.EntryFolderPath)
+	if entryusercredential.Path != "" {
+		model.Folder = basetypes.NewStringValue(entryusercredential.Path)
 	}
 
 	if entryusercredential.Tags != nil {

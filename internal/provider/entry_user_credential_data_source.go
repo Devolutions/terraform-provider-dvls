@@ -111,15 +111,9 @@ func (d *EntryUserCredentialDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	entryusercredential, err := d.client.Entries.UserCredential.Get(data.Id.ValueString())
+	entryusercredential, err := d.client.Entries.UserCredential.Get(data.VaultId.ValueString(), data.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read user credential entry", err.Error())
-		return
-	}
-
-	entryusercredential, err = d.client.Entries.UserCredential.GetUserAuthDetails(entryusercredential)
-	if err != nil {
-		resp.Diagnostics.AddError("unable to read user credential entry sensitive information", err.Error())
 		return
 	}
 
