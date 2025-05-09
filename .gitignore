@@ -11,6 +11,7 @@ bin/
 dist/
 modules-dev/
 /pkg/
+terraform-tests/
 website/.vagrant
 website/.bundle
 website/build

@@ -116,8 +116,7 @@ func (r *EntryUserCredentialResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	userDetails := r.client.Entries.UserCredential.NewUserAuthDetails(plan.Username.ValueString(), plan.Password.ValueString())
-	entryusercredential := newEntryUserCredentialFromResourceModel(plan, userDetails)
+	entryusercredential := newEntryUserCredentialFromResourceModel(plan)
 
 	entryusercredential, err := r.client.Entries.UserCredential.New(entryusercredential)
 	if err != nil {
@@ -138,22 +137,15 @@ func (r *EntryUserCredentialResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	userDetails := r.client.Entries.UserCredential.NewUserAuthDetails(state.Username.ValueString(), state.Password.ValueString())
-	entryusercredential := newEntryUserCredentialFromResourceModel(state, userDetails)
+	entryusercredential := newEntryUserCredentialFromResourceModel(state)
 
-	entryusercredential, err := r.client.Entries.UserCredential.Get(entryusercredential.ID)
+	entryusercredential, err := r.client.Entries.UserCredential.Get(entryusercredential.VaultId, entryusercredential.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
 		resp.Diagnostics.AddError("unable to read user credential entry", err.Error())
-		return
-	}
-
-	entryusercredential, err = r.client.Entries.UserCredential.GetUserAuthDetails(entryusercredential)
-	if err != nil {
-		resp.Diagnostics.AddError("unable to read user credential entry sensitive information", err.Error())
 		return
 	}
 
@@ -170,8 +162,7 @@ func (r *EntryUserCredentialResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	userDetails := r.client.Entries.UserCredential.NewUserAuthDetails(plan.Username.ValueString(), plan.Password.ValueString())
-	entryusercredential := newEntryUserCredentialFromResourceModel(plan, userDetails)
+	entryusercredential := newEntryUserCredentialFromResourceModel(plan)
 
 	_, err := r.client.Entries.UserCredential.Update(entryusercredential)
 	if err != nil {
@@ -190,7 +181,9 @@ func (r *EntryUserCredentialResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	err := r.client.Entries.UserCredential.Delete(state.Id.ValueString())
+	entryusercredential := newEntryUserCredentialFromResourceModel(state)
+
+	err := r.client.Entries.UserCredential.Delete(entryusercredential)
 	if err != nil {
 		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
 			resp.State.RemoveResource(ctx)
