@@ -71,9 +71,11 @@ Replace `/Users/USERNAME/go/bin` with the path to the compiled provider binary a
 Then run the following command, assuming you are on macOS or Linux:
 
 ```shell
-go build -o ~/go/bin/terraform-provider-dvls_v1.0.0
-chmod +x ~/go/bin/terraform-provider-dvls_v1.0.0
+go build -o ~/go/bin/terraform-provider-dvls_v0.3.0
+chmod +x ~/go/bin/terraform-provider-dvls_v0.3.0
 ```
+Notes: the version number should match the version of the provider you are working on.
+
 You can then create a test.tf or example.tf file with the required content; here is a sample:
 
 ```hcl

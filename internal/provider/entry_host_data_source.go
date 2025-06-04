@@ -48,7 +48,7 @@ func (d *EntryHostDataSource) Schema(ctx context.Context, req datasource.SchemaR
 			"id": schema.StringAttribute{
 				Description: "User Credential ID",
 				Required:    true,
-				Validators:  []validator.String{entryHostIdValidator{}},
+				Validators:  []validator.String{entryIdValidator{}},
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",
@@ -135,7 +135,7 @@ func (d *EntryHostDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	data.Id = types.StringValue(entryHost.ID)
+	data.Id = types.StringValue(entryHost.Id)
 	data.VaultId = types.StringValue(entryHost.VaultId)
 	data.Name = types.StringValue(entryHost.EntryName)
 	data.Description = types.StringValue(entryHost.Description)

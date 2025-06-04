@@ -119,7 +119,7 @@ func (r *VaultResource) Create(ctx context.Context, req resource.CreateRequest, 
 		resp.Diagnostics.AddError("unable to create vault", err.Error())
 		return
 	}
-	vault.ID = uuid.NewString()
+	vault.Id = uuid.NewString()
 
 	var options dvls.VaultOptions
 	if !plan.MasterPassword.IsNull() {
@@ -151,7 +151,7 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	vault, err = r.client.Vaults.Get(vault.ID)
+	vault, err = r.client.Vaults.Get(vault.Id)
 	if err != nil {
 		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
 			resp.State.RemoveResource(ctx)
@@ -163,7 +163,7 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	setVaultResourceModel(vault, state)
 
-	valid, err := r.client.Vaults.ValidatePassword(vault.ID, state.MasterPassword.ValueString())
+	valid, err := r.client.Vaults.ValidatePassword(vault.Id, state.MasterPassword.ValueString())
 	if err != nil && strings.Contains(err.Error(), "unexpected result code 0 (Error)") {
 		state.MasterPassword = basetypes.NewStringNull()
 	} else if err != nil {

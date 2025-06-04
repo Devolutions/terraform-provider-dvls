@@ -82,7 +82,7 @@ func (d *EntryCertificateDataSource) Schema(ctx context.Context, req datasource.
 			"id": schema.StringAttribute{
 				Description: "Certificate ID",
 				Required:    true,
-				Validators:  []validator.String{entryCertificateIdValidator{}},
+				Validators:  []validator.String{entryIdValidator{}},
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",
@@ -200,7 +200,7 @@ func (d *EntryCertificateDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	entryBytes, err := d.client.Entries.Certificate.GetFileContent(entrycertificate.ID)
+	entryBytes, err := d.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
