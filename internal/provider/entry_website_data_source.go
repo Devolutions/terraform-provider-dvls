@@ -49,7 +49,7 @@ func (d *EntryWebsiteDataSource) Schema(ctx context.Context, req datasource.Sche
 			"id": schema.StringAttribute{
 				Description: "User Credential ID",
 				Required:    true,
-				Validators:  []validator.String{entryWebsiteIdValidator{}},
+				Validators:  []validator.String{entryIdValidator{}},
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",
@@ -140,7 +140,7 @@ func (d *EntryWebsiteDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	data.Id = types.StringValue(entryWebsite.ID)
+	data.Id = types.StringValue(entryWebsite.Id)
 	data.VaultId = types.StringValue(entryWebsite.VaultId)
 	data.Name = types.StringValue(entryWebsite.EntryName)
 	data.Description = types.StringValue(entryWebsite.Description)

@@ -31,7 +31,7 @@ func newVaultFromResourceModel(data *VaultResourceModel) (dvls.Vault, error) {
 	}
 
 	vault := dvls.Vault{
-		ID:            data.Id.ValueString(),
+		Id:            data.Id.ValueString(),
 		Name:          data.Name.ValueString(),
 		Description:   data.Description.ValueString(),
 		Visibility:    dvls.VaultVisibility(visibility),
@@ -43,7 +43,7 @@ func newVaultFromResourceModel(data *VaultResourceModel) (dvls.Vault, error) {
 
 func setVaultResourceModel(vault dvls.Vault, data *VaultResourceModel) {
 	model := VaultResourceModel{
-		Id:             basetypes.NewStringValue(vault.ID),
+		Id:             basetypes.NewStringValue(vault.Id),
 		Name:           basetypes.NewStringValue(vault.Name),
 		Visibility:     basetypes.NewStringValue(vaultVisibilities[vault.Visibility]),
 		SecurityLevel:  basetypes.NewStringValue(vaultSecurityLevels[vault.SecurityLevel]),
@@ -59,7 +59,7 @@ func setVaultResourceModel(vault dvls.Vault, data *VaultResourceModel) {
 
 func setVaultDataModel(vault dvls.Vault, data *VaultDataSourceModel) {
 	model := VaultDataSourceModel{
-		Id:            basetypes.NewStringValue(vault.ID),
+		Id:            basetypes.NewStringValue(vault.Id),
 		Name:          basetypes.NewStringValue(vault.Name),
 		Visibility:    basetypes.NewStringValue(vaultVisibilities[vault.Visibility]),
 		SecurityLevel: basetypes.NewStringValue(vaultSecurityLevels[vault.SecurityLevel]),

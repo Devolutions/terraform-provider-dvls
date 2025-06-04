@@ -23,7 +23,7 @@ func newEntryCertificateFromResourceModel(plans *EntryCertificateResourceModelDa
 	expiration, _ := plans.Data.Expiration.ValueRFC3339Time()
 
 	entrycertificate := dvls.EntryCertificate{
-		ID:              plans.Data.Id.ValueString(),
+		Id:              plans.Data.Id.ValueString(),
 		VaultId:         plans.Data.VaultId.ValueString(),
 		Name:            plans.Data.Name.ValueString(),
 		Description:     plans.Data.Description.ValueString(),
@@ -52,7 +52,7 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 	}
 
 	model := EntryCertificateResourceModel{
-		Id:         basetypes.NewStringValue(entrycertificate.ID),
+		Id:         basetypes.NewStringValue(entrycertificate.Id),
 		VaultId:    basetypes.NewStringValue(entrycertificate.VaultId),
 		Name:       basetypes.NewStringValue(entrycertificate.Name),
 		Expiration: timeVal,
@@ -127,7 +127,7 @@ func setEntryCertificateDataModel(ctx context.Context, entrycertificate dvls.Ent
 	}
 
 	model := EntryCertificateDataSourceModel{
-		Id:         basetypes.NewStringValue(entrycertificate.ID),
+		Id:         basetypes.NewStringValue(entrycertificate.Id),
 		VaultId:    basetypes.NewStringValue(entrycertificate.VaultId),
 		Name:       basetypes.NewStringValue(entrycertificate.Name),
 		Expiration: timeVal,

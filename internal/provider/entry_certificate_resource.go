@@ -208,7 +208,7 @@ func (r *EntryCertificateResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.ID)
+	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
@@ -232,7 +232,7 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 
 	entrycertificate := newEntryCertificateFromResourceModel(&states)
 
-	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.ID)
+	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.Id)
 	if err != nil {
 		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
 			resp.State.RemoveResource(ctx)
@@ -248,7 +248,7 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.ID)
+	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
