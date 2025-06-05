@@ -36,8 +36,8 @@ type VaultResourceModel struct {
 	Id             types.String `tfsdk:"id"`
 	Name           types.String `tfsdk:"name"`
 	Description    types.String `tfsdk:"description"`
-	SecurityLevel  types.String `tfsdk:"security_level"`
 	Visibility     types.String `tfsdk:"visibility"`
+	SecurityLevel  types.String `tfsdk:"security_level"`
 	MasterPassword types.String `tfsdk:"master_password"`
 }
 
@@ -63,19 +63,19 @@ func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Description: "Vault description",
 				Optional:    true,
 			},
-			"security_level": schema.StringAttribute{
-				Description: fmt.Sprintf("Vault security level. Must be one of the following: %s", listMapValues(vaultSecurityLevels)),
-				Optional:    true,
-				Computed:    true,
-				Default:     stringdefault.StaticString("standard"),
-				Validators:  []validator.String{vaultSecurityLevelValidator{}},
-			},
 			"visibility": schema.StringAttribute{
 				Description: fmt.Sprintf("Vault visibility. Must be one of the following: %s", listMapValues(vaultVisibilities)),
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("default"),
 				Validators:  []validator.String{vaultVisibilityValidator{}},
+			},
+			"security_level": schema.StringAttribute{
+				Description: fmt.Sprintf("Vault security level. Must be one of the following: %s", listMapValues(vaultSecurityLevels)),
+				Optional:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString("standard"),
+				Validators:  []validator.String{vaultSecurityLevelValidator{}},
 			},
 			"master_password": schema.StringAttribute{
 				Description: "Vault master password",

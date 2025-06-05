@@ -16,8 +16,8 @@ A DVLS Vault
 resource "dvls_vault" "example" {
   name            = "foo"
   description     = "bar"
-  security_level  = "high"
   visibility      = "private"
+  security_level  = "high"
   master_password = "foo!"
 }
 ```
@@ -34,7 +34,7 @@ resource "dvls_vault" "example" {
 - `description` (String) Vault description
 - `master_password` (String, Sensitive) Vault master password
 - `security_level` (String) Vault security level. Must be one of the following: [standard, high]
-- `visibility` (String) Vault visibility. Must be one of the following: [private, default, public]
+- `visibility` (String) Vault visibility. Must be one of the following: [default, public, private]
 
 ### Read-Only
 

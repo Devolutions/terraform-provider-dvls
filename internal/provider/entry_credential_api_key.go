@@ -14,21 +14,19 @@ func newEntryCredentialApiKeyFromResourceModel(data *EntryCredentialApiKeyResour
 	}
 
 	entryCredentialApiKey := dvls.Entry{
-		Id:      data.Id.ValueString(),
-		VaultId: data.VaultId.ValueString(),
-		Name:    data.Name.ValueString(),
-		Path:    data.Folder.ValueString(),
-		Type:    dvls.EntryCredentialType,
-		SubType: dvls.EntryCredentialSubTypeApiKey,
-
+		Id:          data.Id.ValueString(),
+		VaultId:     data.VaultId.ValueString(),
+		Name:        data.Name.ValueString(),
+		Path:        data.Folder.ValueString(),
+		Type:        dvls.EntryCredentialType,
+		SubType:     dvls.EntryCredentialSubTypeApiKey,
+		Description: data.Description.ValueString(),
+		Tags:        tags,
 		Data: dvls.EntryCredentialApiKeyData{
 			ApiId:    data.ApiId.ValueString(),
 			ApiKey:   data.ApiKey.ValueString(),
 			TenantId: data.TenantId.ValueString(),
 		},
-
-		Description: data.Description.ValueString(),
-		Tags:        tags,
 	}
 
 	return entryCredentialApiKey
@@ -45,6 +43,20 @@ func setEntryCredentialApiKeyResourceModel(entryCredentialApiKey dvls.Entry, dat
 		model.Folder = basetypes.NewStringValue(entryCredentialApiKey.Path)
 	}
 
+	if entryCredentialApiKey.Description != "" {
+		model.Description = basetypes.NewStringValue(entryCredentialApiKey.Description)
+	}
+
+	if entryCredentialApiKey.Tags != nil {
+		var tagsBase []types.String
+
+		for _, v := range entryCredentialApiKey.Tags {
+			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
+		}
+
+		model.Tags = tagsBase
+	}
+
 	if entryCredentialApiKey.Data != nil {
 		data, ok := entryCredentialApiKey.GetCredentialApiKeyData()
 		if ok {
@@ -60,20 +72,6 @@ func setEntryCredentialApiKeyResourceModel(entryCredentialApiKey dvls.Entry, dat
 				model.TenantId = basetypes.NewStringValue(data.TenantId)
 			}
 		}
-	}
-
-	if entryCredentialApiKey.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialApiKey.Description)
-	}
-
-	if entryCredentialApiKey.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entryCredentialApiKey.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
 	}
 
 	*data = model
@@ -90,6 +88,20 @@ func setEntryCredentialApiKeyDataModel(entryCredentialApiKey dvls.Entry, data *E
 		model.Folder = basetypes.NewStringValue(entryCredentialApiKey.Path)
 	}
 
+	if entryCredentialApiKey.Description != "" {
+		model.Description = basetypes.NewStringValue(entryCredentialApiKey.Description)
+	}
+
+	if entryCredentialApiKey.Tags != nil {
+		var tagsBase []types.String
+
+		for _, v := range entryCredentialApiKey.Tags {
+			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
+		}
+
+		model.Tags = tagsBase
+	}
+
 	if entryCredentialApiKey.Data != nil {
 		data, ok := entryCredentialApiKey.GetCredentialApiKeyData()
 		if ok {
@@ -105,20 +117,6 @@ func setEntryCredentialApiKeyDataModel(entryCredentialApiKey dvls.Entry, data *E
 				model.TenantId = basetypes.NewStringValue(data.TenantId)
 			}
 		}
-	}
-
-	if entryCredentialApiKey.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialApiKey.Description)
-	}
-
-	if entryCredentialApiKey.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entryCredentialApiKey.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
 	}
 
 	*data = model

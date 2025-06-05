@@ -14,21 +14,19 @@ func newEntryCredentialUsernamePasswordFromResourceModel(data *EntryCredentialUs
 	}
 
 	entryCredentialUsernamePassword := dvls.Entry{
-		Id:      data.Id.ValueString(),
-		VaultId: data.VaultId.ValueString(),
-		Name:    data.Name.ValueString(),
-		Path:    data.Folder.ValueString(),
-		Type:    dvls.EntryCredentialType,
-		SubType: dvls.EntryCredentialSubTypeDefault,
-
+		Id:          data.Id.ValueString(),
+		VaultId:     data.VaultId.ValueString(),
+		Name:        data.Name.ValueString(),
+		Path:        data.Folder.ValueString(),
+		Type:        dvls.EntryCredentialType,
+		SubType:     dvls.EntryCredentialSubTypeDefault,
+		Description: data.Description.ValueString(),
+		Tags:        tags,
 		Data: dvls.EntryCredentialDefaultData{
 			Username: data.Username.ValueString(),
 			Domain:   data.Domain.ValueString(),
 			Password: data.Password.ValueString(),
 		},
-
-		Description: data.Description.ValueString(),
-		Tags:        tags,
 	}
 
 	return entryCredentialUsernamePassword
@@ -45,6 +43,20 @@ func setEntryCredentialUsernamePasswordResourceModel(entryCredentialUsernamePass
 		model.Folder = basetypes.NewStringValue(entryCredentialUsernamePassword.Path)
 	}
 
+	if entryCredentialUsernamePassword.Description != "" {
+		model.Description = basetypes.NewStringValue(entryCredentialUsernamePassword.Description)
+	}
+
+	if entryCredentialUsernamePassword.Tags != nil {
+		var tagsBase []types.String
+
+		for _, v := range entryCredentialUsernamePassword.Tags {
+			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
+		}
+
+		model.Tags = tagsBase
+	}
+
 	if entryCredentialUsernamePassword.Data != nil {
 		data, ok := entryCredentialUsernamePassword.GetCredentialDefaultData()
 		if ok {
@@ -60,20 +72,6 @@ func setEntryCredentialUsernamePasswordResourceModel(entryCredentialUsernamePass
 				model.Password = basetypes.NewStringValue(data.Password)
 			}
 		}
-	}
-
-	if entryCredentialUsernamePassword.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialUsernamePassword.Description)
-	}
-
-	if entryCredentialUsernamePassword.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entryCredentialUsernamePassword.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
 	}
 
 	*data = model
@@ -90,6 +88,20 @@ func setEntryCredentialUsernamePasswordDataModel(entryCredentialUsernamePassword
 		model.Folder = basetypes.NewStringValue(entryCredentialUsernamePassword.Path)
 	}
 
+	if entryCredentialUsernamePassword.Description != "" {
+		model.Description = basetypes.NewStringValue(entryCredentialUsernamePassword.Description)
+	}
+
+	if entryCredentialUsernamePassword.Tags != nil {
+		var tagsBase []types.String
+
+		for _, v := range entryCredentialUsernamePassword.Tags {
+			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
+		}
+
+		model.Tags = tagsBase
+	}
+
 	if entryCredentialUsernamePassword.Data != nil {
 		data, ok := entryCredentialUsernamePassword.GetCredentialDefaultData()
 		if ok {
@@ -105,20 +117,6 @@ func setEntryCredentialUsernamePasswordDataModel(entryCredentialUsernamePassword
 				model.Password = basetypes.NewStringValue(data.Password)
 			}
 		}
-	}
-
-	if entryCredentialUsernamePassword.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialUsernamePassword.Description)
-	}
-
-	if entryCredentialUsernamePassword.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entryCredentialUsernamePassword.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
 	}
 
 	*data = model

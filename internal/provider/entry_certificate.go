@@ -26,11 +26,11 @@ func newEntryCertificateFromResourceModel(plans *EntryCertificateResourceModelDa
 		Id:              plans.Data.Id.ValueString(),
 		VaultId:         plans.Data.VaultId.ValueString(),
 		Name:            plans.Data.Name.ValueString(),
-		Description:     plans.Data.Description.ValueString(),
 		EntryFolderPath: plans.Data.Folder.ValueString(),
-		Password:        plans.Data.Password.ValueString(),
+		Description:     plans.Data.Description.ValueString(),
 		Expiration:      expiration,
 		Tags:            tags,
+		Password:        plans.Data.Password.ValueString(),
 	}
 
 	if !plans.Data.File.IsNull() {
@@ -56,8 +56,30 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 		VaultId:    basetypes.NewStringValue(entrycertificate.VaultId),
 		Name:       basetypes.NewStringValue(entrycertificate.Name),
 		Expiration: timeVal,
-		Url:        basetypes.NewObjectNull(EntryCertificateResourceModelUrl{}.AttributeTypes()),
 		File:       basetypes.NewObjectNull(EntryCertificateResourceModelFile{}.AttributeTypes()),
+		Url:        basetypes.NewObjectNull(EntryCertificateResourceModelUrl{}.AttributeTypes()),
+	}
+
+	if entrycertificate.EntryFolderPath != "" {
+		model.Folder = basetypes.NewStringValue(entrycertificate.EntryFolderPath)
+	}
+
+	if entrycertificate.Description != "" {
+		model.Description = basetypes.NewStringValue(entrycertificate.Description)
+	}
+
+	if entrycertificate.Tags != nil {
+		var tagsBase []types.String
+
+		for _, v := range entrycertificate.Tags {
+			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
+		}
+
+		model.Tags = tagsBase
+	}
+
+	if entrycertificate.Password != "" {
+		model.Password = basetypes.NewStringValue(entrycertificate.Password)
 	}
 
 	switch entrycertificate.GetDataMode() {
@@ -89,28 +111,6 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 		model.Url = objectValue
 	default:
 		diags.AddError("unable to set certificate entry", fmt.Sprintf("unknown data mode %d. Should be 2 for files or 3 for url", entrycertificate.GetDataMode()))
-	}
-
-	if entrycertificate.Password != "" {
-		model.Password = basetypes.NewStringValue(entrycertificate.Password)
-	}
-
-	if entrycertificate.Description != "" {
-		model.Description = basetypes.NewStringValue(entrycertificate.Description)
-	}
-
-	if entrycertificate.EntryFolderPath != "" {
-		model.Folder = basetypes.NewStringValue(entrycertificate.EntryFolderPath)
-	}
-
-	if entrycertificate.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entrycertificate.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
 	}
 
 	*data = model
@@ -135,6 +135,28 @@ func setEntryCertificateDataModel(ctx context.Context, entrycertificate dvls.Ent
 		File:       basetypes.NewObjectNull(EntryCertificateResourceModelFile{}.AttributeTypes()),
 	}
 
+	if entrycertificate.EntryFolderPath != "" {
+		model.Folder = basetypes.NewStringValue(entrycertificate.EntryFolderPath)
+	}
+
+	if entrycertificate.Description != "" {
+		model.Description = basetypes.NewStringValue(entrycertificate.Description)
+	}
+
+	if entrycertificate.Tags != nil {
+		var tagsBase []types.String
+
+		for _, v := range entrycertificate.Tags {
+			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
+		}
+
+		model.Tags = tagsBase
+	}
+
+	if entrycertificate.Password != "" {
+		model.Password = basetypes.NewStringValue(entrycertificate.Password)
+	}
+
 	switch entrycertificate.GetDataMode() {
 	case dvls.EntryCertificateDataModeFile:
 		fileObject := EntryCertificateResourceModelFile{
@@ -164,28 +186,6 @@ func setEntryCertificateDataModel(ctx context.Context, entrycertificate dvls.Ent
 		model.Url = objectValue
 	default:
 		diags.AddError("unable to set certificate entry", fmt.Sprintf("unknown data mode %d. Should be 2 for files or 3 for url", entrycertificate.GetDataMode()))
-	}
-
-	if entrycertificate.Password != "" {
-		model.Password = basetypes.NewStringValue(entrycertificate.Password)
-	}
-
-	if entrycertificate.Description != "" {
-		model.Description = basetypes.NewStringValue(entrycertificate.Description)
-	}
-
-	if entrycertificate.EntryFolderPath != "" {
-		model.Folder = basetypes.NewStringValue(entrycertificate.EntryFolderPath)
-	}
-
-	if entrycertificate.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entrycertificate.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
 	}
 
 	*data = model

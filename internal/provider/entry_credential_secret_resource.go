@@ -29,17 +29,15 @@ type EntryCredentialSecretResource struct {
 
 // EntryCredentialSecretResourceModel describes the resource data model.
 type EntryCredentialSecretResourceModel struct {
-	Id      types.String `tfsdk:"id"`
-	VaultId types.String `tfsdk:"vault_id"`
-	Name    types.String `tfsdk:"name"`
-	Folder  types.String `tfsdk:"folder"`
+	Id          types.String   `tfsdk:"id"`
+	VaultId     types.String   `tfsdk:"vault_id"`
+	Name        types.String   `tfsdk:"name"`
+	Folder      types.String   `tfsdk:"folder"`
+	Description types.String   `tfsdk:"description"`
+	Tags        []types.String `tfsdk:"tags"`
 
 	// General
 	Secret types.String `tfsdk:"secret"`
-
-	// More
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
 }
 
 func (r *EntryCredentialSecretResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -69,11 +67,6 @@ func (r *EntryCredentialSecretResource) Schema(ctx context.Context, req resource
 				Description: "The folder path where the entry is created.",
 				Optional:    true,
 			},
-			"secret": schema.StringAttribute{
-				Description: "The entry credential secret.",
-				Optional:    true,
-				Sensitive:   true,
-			},
 			"description": schema.StringAttribute{
 				Description: "The description of the entry.",
 				Optional:    true,
@@ -82,6 +75,11 @@ func (r *EntryCredentialSecretResource) Schema(ctx context.Context, req resource
 				ElementType: types.StringType,
 				Description: "A list of tags to add to the entry.",
 				Optional:    true,
+			},
+			"secret": schema.StringAttribute{
+				Description: "The entry credential secret.",
+				Optional:    true,
+				Sensitive:   true,
 			},
 		},
 	}

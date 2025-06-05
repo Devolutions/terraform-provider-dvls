@@ -1,7 +1,7 @@
 resource "dvls_vault" "example" {
   name            = "foo"
   description     = "bar"
-  security_level  = "high"
   visibility      = "private"
+  security_level  = "high"
   master_password = "foo!"
 }
