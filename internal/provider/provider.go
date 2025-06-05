@@ -96,6 +96,7 @@ func (p *DvlsProvider) Resources(ctx context.Context) []func() resource.Resource
 	return []func() resource.Resource{
 		NewEntryCertificateResource,
 		NewEntryCredentialApiKeyResource,
+		NewEntryCredentialAzureServicePrincipalResource,
 		NewEntryCredentialSecretResource,
 		NewEntryCredentialUsernamePasswordResource,
 		NewVaultResource,
@@ -106,6 +107,7 @@ func (p *DvlsProvider) DataSources(ctx context.Context) []func() datasource.Data
 	return []func() datasource.DataSource{
 		NewEntryCertificateDataSource,
 		NewEntryCredentialApiKeyDataSource,
+		NewEntryCredentialAzureServicePrincipalDataSource,
 		NewEntryCredentialSecretDataSource,
 		NewEntryCredentialUsernamePasswordDataSource,
 		NewEntryHostDataSource,
