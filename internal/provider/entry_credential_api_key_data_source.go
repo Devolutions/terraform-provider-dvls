@@ -25,19 +25,17 @@ type EntryCredentialApiKeyDataSource struct {
 
 // EntryCredentialApiKeyDataSourceModel describes the data source data model.
 type EntryCredentialApiKeyDataSourceModel struct {
-	Id      types.String `tfsdk:"id"`
-	VaultId types.String `tfsdk:"vault_id"`
-	Name    types.String `tfsdk:"name"`
-	Folder  types.String `tfsdk:"folder"`
+	Id          types.String   `tfsdk:"id"`
+	VaultId     types.String   `tfsdk:"vault_id"`
+	Name        types.String   `tfsdk:"name"`
+	Folder      types.String   `tfsdk:"folder"`
+	Description types.String   `tfsdk:"description"`
+	Tags        []types.String `tfsdk:"tags"`
 
 	// General
 	ApiId    types.String `tfsdk:"api_id"`
 	ApiKey   types.String `tfsdk:"api_key"`
 	TenantId types.String `tfsdk:"tenant_id"`
-
-	// More
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
 }
 
 func (d *EntryCredentialApiKeyDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -67,6 +65,15 @@ func (d *EntryCredentialApiKeyDataSource) Schema(ctx context.Context, req dataso
 				Description: "The folder path of the entry.",
 				Computed:    true,
 			},
+			"description": schema.StringAttribute{
+				Description: "The description of the entry.",
+				Computed:    true,
+			},
+			"tags": schema.ListAttribute{
+				ElementType: types.StringType,
+				Description: "A list of tags added to the entry.",
+				Computed:    true,
+			},
 			"api_id": schema.StringAttribute{
 				Description: "The entry credential API ID.",
 				Computed:    true,
@@ -78,15 +85,6 @@ func (d *EntryCredentialApiKeyDataSource) Schema(ctx context.Context, req dataso
 			},
 			"tenant_id": schema.StringAttribute{
 				Description: "The entry credential tenant ID.",
-				Computed:    true,
-			},
-			"description": schema.StringAttribute{
-				Description: "The description of the entry.",
-				Computed:    true,
-			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags added to the entry.",
 				Computed:    true,
 			},
 		},

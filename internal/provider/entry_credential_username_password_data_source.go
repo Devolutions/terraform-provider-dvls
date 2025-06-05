@@ -25,19 +25,17 @@ type EntryCredentialUsernamePasswordDataSource struct {
 
 // EntryCredentialUsernamePasswordDataSourceModel describes the data source data model.
 type EntryCredentialUsernamePasswordDataSourceModel struct {
-	Id      types.String `tfsdk:"id"`
-	VaultId types.String `tfsdk:"vault_id"`
-	Name    types.String `tfsdk:"name"`
-	Folder  types.String `tfsdk:"folder"`
+	Id          types.String   `tfsdk:"id"`
+	VaultId     types.String   `tfsdk:"vault_id"`
+	Name        types.String   `tfsdk:"name"`
+	Folder      types.String   `tfsdk:"folder"`
+	Description types.String   `tfsdk:"description"`
+	Tags        []types.String `tfsdk:"tags"`
 
 	// General
 	Username types.String `tfsdk:"username"`
 	Domain   types.String `tfsdk:"domain"`
 	Password types.String `tfsdk:"password"`
-
-	// More
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
 }
 
 func (d *EntryCredentialUsernamePasswordDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -67,6 +65,15 @@ func (d *EntryCredentialUsernamePasswordDataSource) Schema(ctx context.Context, 
 				Description: "The folder path of the entry.",
 				Computed:    true,
 			},
+			"description": schema.StringAttribute{
+				Description: "The description of the entry.",
+				Computed:    true,
+			},
+			"tags": schema.ListAttribute{
+				ElementType: types.StringType,
+				Description: "A list of tags added to the entry.",
+				Computed:    true,
+			},
 			"username": schema.StringAttribute{
 				Description: "The entry credential username.",
 				Computed:    true,
@@ -79,15 +86,6 @@ func (d *EntryCredentialUsernamePasswordDataSource) Schema(ctx context.Context, 
 				Description: "The entry credential password.",
 				Computed:    true,
 				Sensitive:   true,
-			},
-			"description": schema.StringAttribute{
-				Description: "The description of the entry.",
-				Computed:    true,
-			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags added to the entry.",
-				Computed:    true,
 			},
 		},
 	}

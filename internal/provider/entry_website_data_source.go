@@ -25,16 +25,18 @@ type EntryWebsiteDataSource struct {
 
 // EntryWebsiteDataSourceModel describes the resource data model.
 type EntryWebsiteDataSourceModel struct {
-	Id                    types.String   `tfsdk:"id"`
-	VaultId               types.String   `tfsdk:"vault_id"`
-	Name                  types.String   `tfsdk:"name"`
-	Description           types.String   `tfsdk:"description"`
-	Username              types.String   `tfsdk:"username"`
-	Password              types.String   `tfsdk:"password"`
-	Url                   types.String   `tfsdk:"url"`
-	Folder                types.String   `tfsdk:"folder"`
-	Tags                  []types.String `tfsdk:"tags"`
-	WebBrowserApplication types.Int64    `tfsdk:"web_browser_application"`
+	Id          types.String   `tfsdk:"id"`
+	VaultId     types.String   `tfsdk:"vault_id"`
+	Name        types.String   `tfsdk:"name"`
+	Folder      types.String   `tfsdk:"folder"`
+	Description types.String   `tfsdk:"description"`
+	Tags        []types.String `tfsdk:"tags"`
+
+	// General
+	Url                   types.String `tfsdk:"url"`
+	WebBrowserApplication types.Int64  `tfsdk:"web_browser_application"`
+	Username              types.String `tfsdk:"username"`
+	Password              types.String `tfsdk:"password"`
 }
 
 func (d *EntryWebsiteDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -59,21 +61,12 @@ func (d *EntryWebsiteDataSource) Schema(ctx context.Context, req datasource.Sche
 				Description: "Website name",
 				Computed:    true,
 			},
-			"description": schema.StringAttribute{
-				Description: "Website description",
-				Computed:    true,
-			},
-			"username": schema.StringAttribute{
-				Description: "Website username",
-				Computed:    true,
-			},
-			"password": schema.StringAttribute{
-				Description: "Website password",
-				Computed:    true,
-				Sensitive:   true,
-			},
 			"folder": schema.StringAttribute{
 				Description: "Website folder path",
+				Computed:    true,
+			},
+			"description": schema.StringAttribute{
+				Description: "Website description",
 				Computed:    true,
 			},
 			"tags": schema.ListAttribute{
@@ -88,6 +81,15 @@ func (d *EntryWebsiteDataSource) Schema(ctx context.Context, req datasource.Sche
 			"web_browser_application": schema.Int64Attribute{
 				Description: "Web browser application ID",
 				Computed:    true,
+			},
+			"username": schema.StringAttribute{
+				Description: "Website username",
+				Computed:    true,
+			},
+			"password": schema.StringAttribute{
+				Description: "Website password",
+				Computed:    true,
+				Sensitive:   true,
 			},
 		},
 	}
@@ -143,17 +145,18 @@ func (d *EntryWebsiteDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.Id = types.StringValue(entryWebsite.Id)
 	data.VaultId = types.StringValue(entryWebsite.VaultId)
 	data.Name = types.StringValue(entryWebsite.EntryName)
-	data.Description = types.StringValue(entryWebsite.Description)
-	data.Username = types.StringValue(entryWebsiteSensitiveData.WebsiteDetails.Username)
-	data.Password = types.StringValue(*entryWebsiteSensitiveData.WebsiteDetails.Password)
-	data.Url = types.StringValue(entryWebsiteSensitiveData.WebsiteDetails.URL)
 	data.Folder = types.StringValue(entryWebsite.EntryFolderPath)
+	data.Description = types.StringValue(entryWebsite.Description)
 	tags := make([]types.String, len(entryWebsite.Tags))
 	for i, tag := range entryWebsite.Tags {
 		tags[i] = types.StringValue(tag)
 	}
 	data.Tags = tags
+
+	data.Url = types.StringValue(entryWebsiteSensitiveData.WebsiteDetails.URL)
 	data.WebBrowserApplication = types.Int64Value(int64(entryWebsiteSensitiveData.WebsiteDetails.WebBrowserApplication))
+	data.Username = types.StringValue(entryWebsiteSensitiveData.WebsiteDetails.Username)
+	data.Password = types.StringValue(*entryWebsiteSensitiveData.WebsiteDetails.Password)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)

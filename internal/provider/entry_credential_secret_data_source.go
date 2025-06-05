@@ -25,17 +25,15 @@ type EntryCredentialSecretDataSource struct {
 
 // EntryCredentialSecretDataSourceModel describes the data source data model.
 type EntryCredentialSecretDataSourceModel struct {
-	Id      types.String `tfsdk:"id"`
-	VaultId types.String `tfsdk:"vault_id"`
-	Name    types.String `tfsdk:"name"`
-	Folder  types.String `tfsdk:"folder"`
+	Id          types.String   `tfsdk:"id"`
+	VaultId     types.String   `tfsdk:"vault_id"`
+	Name        types.String   `tfsdk:"name"`
+	Folder      types.String   `tfsdk:"folder"`
+	Description types.String   `tfsdk:"description"`
+	Tags        []types.String `tfsdk:"tags"`
 
 	// General
 	Secret types.String `tfsdk:"secret"`
-
-	// More
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
 }
 
 func (d *EntryCredentialSecretDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -65,11 +63,6 @@ func (d *EntryCredentialSecretDataSource) Schema(ctx context.Context, req dataso
 				Description: "The folder path of the entry.",
 				Computed:    true,
 			},
-			"secret": schema.StringAttribute{
-				Description: "The entry credential secret.",
-				Computed:    true,
-				Sensitive:   true,
-			},
 			"description": schema.StringAttribute{
 				Description: "The description of the entry.",
 				Computed:    true,
@@ -78,6 +71,11 @@ func (d *EntryCredentialSecretDataSource) Schema(ctx context.Context, req dataso
 				ElementType: types.StringType,
 				Description: "A list of tags added to the entry.",
 				Computed:    true,
+			},
+			"secret": schema.StringAttribute{
+				Description: "The entry credential secret.",
+				Computed:    true,
+				Sensitive:   true,
 			},
 		},
 	}

@@ -29,19 +29,17 @@ type EntryCredentialUsernamePasswordResource struct {
 
 // EntryCredentialUsernamePasswordResourceModel describes the resource data model.
 type EntryCredentialUsernamePasswordResourceModel struct {
-	Id      types.String `tfsdk:"id"`
-	VaultId types.String `tfsdk:"vault_id"`
-	Name    types.String `tfsdk:"name"`
-	Folder  types.String `tfsdk:"folder"`
+	Id          types.String   `tfsdk:"id"`
+	VaultId     types.String   `tfsdk:"vault_id"`
+	Name        types.String   `tfsdk:"name"`
+	Folder      types.String   `tfsdk:"folder"`
+	Description types.String   `tfsdk:"description"`
+	Tags        []types.String `tfsdk:"tags"`
 
 	// General
 	Username types.String `tfsdk:"username"`
 	Domain   types.String `tfsdk:"domain"`
 	Password types.String `tfsdk:"password"`
-
-	// More
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
 }
 
 func (r *EntryCredentialUsernamePasswordResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -71,6 +69,15 @@ func (r *EntryCredentialUsernamePasswordResource) Schema(ctx context.Context, re
 				Description: "The folder path where the entry is created.",
 				Optional:    true,
 			},
+			"description": schema.StringAttribute{
+				Description: "The description of the entry.",
+				Optional:    true,
+			},
+			"tags": schema.ListAttribute{
+				ElementType: types.StringType,
+				Description: "A list of tags to add to the entry.",
+				Optional:    true,
+			},
 			"username": schema.StringAttribute{
 				Description: "The entry credential username.",
 				Optional:    true,
@@ -83,15 +90,6 @@ func (r *EntryCredentialUsernamePasswordResource) Schema(ctx context.Context, re
 				Description: "The entry credential password.",
 				Optional:    true,
 				Sensitive:   true,
-			},
-			"description": schema.StringAttribute{
-				Description: "The description of the entry.",
-				Optional:    true,
-			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags to add to the entry.",
-				Optional:    true,
 			},
 		},
 	}

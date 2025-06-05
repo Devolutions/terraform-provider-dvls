@@ -29,19 +29,17 @@ type EntryCredentialApiKeyResource struct {
 
 // EntryCredentialApiKeyResourceModel describes the resource data model.
 type EntryCredentialApiKeyResourceModel struct {
-	Id      types.String `tfsdk:"id"`
-	VaultId types.String `tfsdk:"vault_id"`
-	Name    types.String `tfsdk:"name"`
-	Folder  types.String `tfsdk:"folder"`
+	Id          types.String   `tfsdk:"id"`
+	VaultId     types.String   `tfsdk:"vault_id"`
+	Name        types.String   `tfsdk:"name"`
+	Folder      types.String   `tfsdk:"folder"`
+	Description types.String   `tfsdk:"description"`
+	Tags        []types.String `tfsdk:"tags"`
 
 	// General
 	ApiId    types.String `tfsdk:"api_id"`
 	ApiKey   types.String `tfsdk:"api_key"`
 	TenantId types.String `tfsdk:"tenant_id"`
-
-	// More
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
 }
 
 func (r *EntryCredentialApiKeyResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -71,6 +69,15 @@ func (r *EntryCredentialApiKeyResource) Schema(ctx context.Context, req resource
 				Description: "The folder path where the entry is created.",
 				Optional:    true,
 			},
+			"description": schema.StringAttribute{
+				Description: "The description of the entry.",
+				Optional:    true,
+			},
+			"tags": schema.ListAttribute{
+				ElementType: types.StringType,
+				Description: "A list of tags to add to the entry.",
+				Optional:    true,
+			},
 			"api_id": schema.StringAttribute{
 				Description: "The entry credential API ID.",
 				Optional:    true,
@@ -82,15 +89,6 @@ func (r *EntryCredentialApiKeyResource) Schema(ctx context.Context, req resource
 			},
 			"tenant_id": schema.StringAttribute{
 				Description: "The entry credential tenant ID.",
-				Optional:    true,
-			},
-			"description": schema.StringAttribute{
-				Description: "The description of the entry.",
-				Optional:    true,
-			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags to add to the entry.",
 				Optional:    true,
 			},
 		},

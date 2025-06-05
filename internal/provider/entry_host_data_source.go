@@ -28,12 +28,14 @@ type EntryHostDataSourceModel struct {
 	Id          types.String   `tfsdk:"id"`
 	VaultId     types.String   `tfsdk:"vault_id"`
 	Name        types.String   `tfsdk:"name"`
-	Description types.String   `tfsdk:"description"`
-	Username    types.String   `tfsdk:"username"`
-	Password    types.String   `tfsdk:"password"`
-	Host        types.String   `tfsdk:"host"`
 	Folder      types.String   `tfsdk:"folder"`
+	Description types.String   `tfsdk:"description"`
 	Tags        []types.String `tfsdk:"tags"`
+
+	// General
+	Host     types.String `tfsdk:"host"`
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
 }
 
 func (d *EntryHostDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -58,8 +60,21 @@ func (d *EntryHostDataSource) Schema(ctx context.Context, req datasource.SchemaR
 				Description: "Host name",
 				Computed:    true,
 			},
+			"folder": schema.StringAttribute{
+				Description: "Host folder path",
+				Computed:    true,
+			},
 			"description": schema.StringAttribute{
 				Description: "Host description",
+				Computed:    true,
+			},
+			"tags": schema.ListAttribute{
+				ElementType: types.StringType,
+				Description: "Host tags",
+				Computed:    true,
+			},
+			"host": schema.StringAttribute{
+				Description: "Host",
 				Computed:    true,
 			},
 			"username": schema.StringAttribute{
@@ -70,19 +85,6 @@ func (d *EntryHostDataSource) Schema(ctx context.Context, req datasource.SchemaR
 				Description: "Host password",
 				Computed:    true,
 				Sensitive:   true,
-			},
-			"host": schema.StringAttribute{
-				Description: "Host",
-				Computed:    true,
-			},
-			"folder": schema.StringAttribute{
-				Description: "Host folder path",
-				Computed:    true,
-			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "Host tags",
-				Computed:    true,
 			},
 		},
 	}
@@ -138,16 +140,17 @@ func (d *EntryHostDataSource) Read(ctx context.Context, req datasource.ReadReque
 	data.Id = types.StringValue(entryHost.Id)
 	data.VaultId = types.StringValue(entryHost.VaultId)
 	data.Name = types.StringValue(entryHost.EntryName)
-	data.Description = types.StringValue(entryHost.Description)
-	data.Username = types.StringValue(entryHostSensitiveData.HostDetails.Username)
-	data.Password = types.StringValue(*entryHostSensitiveData.HostDetails.Password)
-	data.Host = types.StringValue(entryHostSensitiveData.HostDetails.Host)
 	data.Folder = types.StringValue(entryHost.EntryFolderPath)
+	data.Description = types.StringValue(entryHost.Description)
 	tags := make([]types.String, len(entryHost.Tags))
 	for i, tag := range entryHost.Tags {
 		tags[i] = types.StringValue(tag)
 	}
 	data.Tags = tags
+
+	data.Host = types.StringValue(entryHostSensitiveData.HostDetails.Host)
+	data.Username = types.StringValue(entryHostSensitiveData.HostDetails.Username)
+	data.Password = types.StringValue(*entryHostSensitiveData.HostDetails.Password)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
