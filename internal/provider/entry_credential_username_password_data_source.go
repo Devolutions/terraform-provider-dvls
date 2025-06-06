@@ -125,6 +125,12 @@ func (d *EntryCredentialUsernamePasswordDataSource) Read(ctx context.Context, re
 		return
 	}
 
+	if entryCredentialUsernamePassword.Type != dvls.EntryCredentialType ||
+		entryCredentialUsernamePassword.SubType != dvls.EntryCredentialSubTypeDefault {
+		resp.Diagnostics.AddError("invalid entry type", "expected an username password credential entry.")
+		return
+	}
+
 	setEntryCredentialUsernamePasswordDataModel(entryCredentialUsernamePassword, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

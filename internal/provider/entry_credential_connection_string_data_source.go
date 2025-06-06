@@ -115,6 +115,12 @@ func (d *EntryCredentialConnectionStringDataSource) Read(ctx context.Context, re
 		return
 	}
 
+	if entryCredentialConnectionString.Type != dvls.EntryCredentialType ||
+		entryCredentialConnectionString.SubType != dvls.EntryCredentialSubTypeConnectionString {
+		resp.Diagnostics.AddError("invalid entry type", "expected a connection string credential entry.")
+		return
+	}
+
 	setEntryCredentialConnectionStringDataModel(entryCredentialConnectionString, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

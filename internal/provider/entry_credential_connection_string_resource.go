@@ -204,6 +204,18 @@ func (r *EntryCredentialConnectionStringResource) ImportState(ctx context.Contex
 		return
 	}
 
+	entryCredentialConnectionString, err := r.client.Entries.Credential.GetById(vaultId, entryId)
+	if err != nil {
+		resp.Diagnostics.AddError("unable to read entry", err.Error())
+		return
+	}
+
+	if entryCredentialConnectionString.Type != dvls.EntryCredentialType ||
+		entryCredentialConnectionString.SubType != dvls.EntryCredentialSubTypeConnectionString {
+		resp.Diagnostics.AddError("invalid entry type", "expected a connection string credential entry.")
+		return
+	}
+
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
 }

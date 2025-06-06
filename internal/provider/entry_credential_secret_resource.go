@@ -204,6 +204,18 @@ func (r *EntryCredentialSecretResource) ImportState(ctx context.Context, req res
 		return
 	}
 
+	entryCredentialSecret, err := r.client.Entries.Credential.GetById(vaultId, entryId)
+	if err != nil {
+		resp.Diagnostics.AddError("unable to read entry", err.Error())
+		return
+	}
+
+	if entryCredentialSecret.Type != dvls.EntryCredentialType ||
+		entryCredentialSecret.SubType != dvls.EntryCredentialSubTypeAccessCode {
+		resp.Diagnostics.AddError("invalid entry type", "expected a secret credential entry.")
+		return
+	}
+
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
 }

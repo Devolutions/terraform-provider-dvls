@@ -125,6 +125,12 @@ func (d *EntryCredentialAzureServicePrincipalDataSource) Read(ctx context.Contex
 		return
 	}
 
+	if entryCredentialAzureServicePrincipal.Type != dvls.EntryCredentialType ||
+		entryCredentialAzureServicePrincipal.SubType != dvls.EntryCredentialSubTypeAzureServicePrincipal {
+		resp.Diagnostics.AddError("invalid entry type", "expected an azure service principal credential entry.")
+		return
+	}
+
 	setEntryCredentialAzureServicePrincipalDataModel(entryCredentialAzureServicePrincipal, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
