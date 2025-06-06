@@ -133,6 +133,12 @@ func (d *EntryCredentialSSHKeyDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
+	if entryCredentialSSHKey.Type != dvls.EntryCredentialType ||
+		entryCredentialSSHKey.SubType != dvls.EntryCredentialSubTypePrivateKey {
+		resp.Diagnostics.AddError("invalid entry type", "expected a SSH key credential entry.")
+		return
+	}
+
 	setEntryCredentialSSHKeyDataModel(entryCredentialSSHKey, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

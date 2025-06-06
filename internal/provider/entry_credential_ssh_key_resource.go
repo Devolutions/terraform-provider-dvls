@@ -222,6 +222,18 @@ func (r *EntryCredentialSSHKeyResource) ImportState(ctx context.Context, req res
 		return
 	}
 
+	entryCredentialSSHKey, err := r.client.Entries.Credential.GetById(vaultId, entryId)
+	if err != nil {
+		resp.Diagnostics.AddError("unable to read entry", err.Error())
+		return
+	}
+
+	if entryCredentialSSHKey.Type != dvls.EntryCredentialType ||
+		entryCredentialSSHKey.SubType != dvls.EntryCredentialSubTypePrivateKey {
+		resp.Diagnostics.AddError("invalid entry type", "expected a SSH key credential entry.")
+		return
+	}
+
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
 }

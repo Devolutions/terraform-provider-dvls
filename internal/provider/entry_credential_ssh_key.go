@@ -36,8 +36,6 @@ func newEntryCredentialSSHKeyFromResourceModel(data *EntryCredentialSSHKeyResour
 func setEntryCredentialSSHKeyResourceModel(entryCredentialSSHKey dvls.Entry, data *EntryCredentialSSHKeyResourceModel) {
 	var model EntryCredentialSSHKeyResourceModel
 
-	// VALIDATE IF THE ENTRY IS THE CORRECT SUBTYPE
-
 	model.Id = basetypes.NewStringValue(entryCredentialSSHKey.Id)
 	model.VaultId = basetypes.NewStringValue(entryCredentialSSHKey.VaultId)
 	model.Name = basetypes.NewStringValue(entryCredentialSSHKey.Name)

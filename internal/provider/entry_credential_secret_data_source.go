@@ -115,6 +115,12 @@ func (d *EntryCredentialSecretDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
+	if entryCredentialSecret.Type != dvls.EntryCredentialType ||
+		entryCredentialSecret.SubType != dvls.EntryCredentialSubTypeAccessCode {
+		resp.Diagnostics.AddError("invalid entry type", "expected a secret credential entry.")
+		return
+	}
+
 	setEntryCredentialSecretDataModel(entryCredentialSecret, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

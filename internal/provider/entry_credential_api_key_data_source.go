@@ -125,6 +125,12 @@ func (d *EntryCredentialApiKeyDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
+	if entryCredentialApiKey.Type != dvls.EntryCredentialType ||
+		entryCredentialApiKey.SubType != dvls.EntryCredentialSubTypeApiKey {
+		resp.Diagnostics.AddError("invalid entry type", "expected an api key credential entry.")
+		return
+	}
+
 	setEntryCredentialApiKeyDataModel(entryCredentialApiKey, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

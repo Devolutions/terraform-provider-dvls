@@ -214,6 +214,18 @@ func (r *EntryCredentialApiKeyResource) ImportState(ctx context.Context, req res
 		return
 	}
 
+	entryCredentialApiKey, err := r.client.Entries.Credential.GetById(vaultId, entryId)
+	if err != nil {
+		resp.Diagnostics.AddError("unable to read entry", err.Error())
+		return
+	}
+
+	if entryCredentialApiKey.Type != dvls.EntryCredentialType ||
+		entryCredentialApiKey.SubType != dvls.EntryCredentialSubTypeApiKey {
+		resp.Diagnostics.AddError("invalid entry type", "expected an api key credential entry.")
+		return
+	}
+
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
 }
