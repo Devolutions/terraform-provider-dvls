@@ -28,8 +28,8 @@ type VaultDataSourceModel struct {
 	Id            types.String `tfsdk:"id"`
 	Name          types.String `tfsdk:"name"`
 	Description   types.String `tfsdk:"description"`
-	SecurityLevel types.String `tfsdk:"security_level"`
 	Visibility    types.String `tfsdk:"visibility"`
+	SecurityLevel types.String `tfsdk:"security_level"`
 }
 
 func (d *VaultDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -54,12 +54,12 @@ func (d *VaultDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 				Description: "Vault description",
 				Computed:    true,
 			},
-			"security_level": schema.StringAttribute{
-				Description: "Vault security level",
-				Computed:    true,
-			},
 			"visibility": schema.StringAttribute{
 				Description: "Vault visibility",
+				Computed:    true,
+			},
+			"security_level": schema.StringAttribute{
+				Description: "Vault security level",
 				Computed:    true,
 			},
 		},

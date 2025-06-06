@@ -31,13 +31,15 @@ type EntryCertificateDataSourceModel struct {
 	Id          types.String      `tfsdk:"id"`
 	VaultId     types.String      `tfsdk:"vault_id"`
 	Name        types.String      `tfsdk:"name"`
-	Description types.String      `tfsdk:"description"`
-	Password    types.String      `tfsdk:"password"`
 	Folder      types.String      `tfsdk:"folder"`
-	Url         types.Object      `tfsdk:"url"`
-	File        types.Object      `tfsdk:"file"`
+	Description types.String      `tfsdk:"description"`
 	Expiration  timetypes.RFC3339 `tfsdk:"expiration"`
 	Tags        []types.String    `tfsdk:"tags"`
+
+	// Document
+	Password types.String `tfsdk:"password"`
+	File     types.Object `tfsdk:"file"`
+	Url      types.Object `tfsdk:"url"`
 }
 
 type EntryCertificateDataSourceModelData struct {
@@ -82,7 +84,7 @@ func (d *EntryCertificateDataSource) Schema(ctx context.Context, req datasource.
 			"id": schema.StringAttribute{
 				Description: "Certificate ID",
 				Required:    true,
-				Validators:  []validator.String{entryCertificateIdValidator{}},
+				Validators:  []validator.String{entryIdValidator{}},
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",
@@ -92,36 +94,30 @@ func (d *EntryCertificateDataSource) Schema(ctx context.Context, req datasource.
 				Description: "Certificate name",
 				Computed:    true,
 			},
+			"folder": schema.StringAttribute{
+				Description: "Certificate folder path",
+				Computed:    true,
+			},
 			"description": schema.StringAttribute{
 				Description: "Certificate description",
 				Computed:    true,
 			},
+			"expiration": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
+				Description: "Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)",
+				Computed:    true,
+			},
+			"tags": schema.ListAttribute{
+				ElementType: types.StringType,
+				Description: "Certificate tags",
+				Computed:    true,
+			},
+
 			"password": schema.StringAttribute{
 				Description: "Certificate password",
 				Computed:    true,
 				Sensitive:   true,
 			},
-			"folder": schema.StringAttribute{
-				Description: "Certificate folder path",
-				Computed:    true,
-			},
-
-			"url": schema.SingleNestedAttribute{
-				Description: "Certificate url. Either file or url must be specified.",
-				Computed:    true,
-
-				Attributes: map[string]schema.Attribute{
-					"url": schema.StringAttribute{
-						Description: "Certificate url",
-						Computed:    true,
-					},
-					"use_default_credentials": schema.BoolAttribute{
-						Description: "Use default credentials",
-						Computed:    true,
-					},
-				},
-			},
-
 			"file": schema.SingleNestedAttribute{
 				Description: "Certificate file. Either file or url must be specified.",
 				Computed:    true,
@@ -139,16 +135,20 @@ func (d *EntryCertificateDataSource) Schema(ctx context.Context, req datasource.
 					},
 				},
 			},
+			"url": schema.SingleNestedAttribute{
+				Description: "Certificate url. Either file or url must be specified.",
+				Computed:    true,
 
-			"expiration": schema.StringAttribute{
-				CustomType:  timetypes.RFC3339Type{},
-				Description: "Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)",
-				Computed:    true,
-			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "Certificate tags",
-				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"url": schema.StringAttribute{
+						Description: "Certificate url",
+						Computed:    true,
+					},
+					"use_default_credentials": schema.BoolAttribute{
+						Description: "Use default credentials",
+						Computed:    true,
+					},
+				},
 			},
 		},
 	}
@@ -200,7 +200,7 @@ func (d *EntryCertificateDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	entryBytes, err := d.client.Entries.Certificate.GetFileContent(entrycertificate.ID)
+	entryBytes, err := d.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return

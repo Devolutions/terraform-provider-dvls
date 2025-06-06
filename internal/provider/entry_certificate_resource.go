@@ -38,13 +38,15 @@ type EntryCertificateResourceModel struct {
 	Id          types.String      `tfsdk:"id"`
 	VaultId     types.String      `tfsdk:"vault_id"`
 	Name        types.String      `tfsdk:"name"`
-	Description types.String      `tfsdk:"description"`
-	Password    types.String      `tfsdk:"password"`
 	Folder      types.String      `tfsdk:"folder"`
-	Url         types.Object      `tfsdk:"url"`
-	File        types.Object      `tfsdk:"file"`
+	Description types.String      `tfsdk:"description"`
 	Expiration  timetypes.RFC3339 `tfsdk:"expiration"`
 	Tags        []types.String    `tfsdk:"tags"`
+
+	// Document
+	Password types.String `tfsdk:"password"`
+	File     types.Object `tfsdk:"file"`
+	Url      types.Object `tfsdk:"url"`
 }
 
 type EntryCertificateResourceModelData struct {
@@ -100,40 +102,30 @@ func (r *EntryCertificateResource) Schema(ctx context.Context, req resource.Sche
 				Description: "Certificate name",
 				Required:    true,
 			},
+			"folder": schema.StringAttribute{
+				Description: "Certificate folder path",
+				Optional:    true,
+			},
 			"description": schema.StringAttribute{
 				Description: "Certificate description",
 				Optional:    true,
 			},
+			"expiration": schema.StringAttribute{
+				CustomType:  timetypes.RFC3339Type{},
+				Description: "Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)",
+				Required:    true,
+			},
+			"tags": schema.ListAttribute{
+				ElementType: types.StringType,
+				Description: "Certificate tags",
+				Optional:    true,
+			},
+
 			"password": schema.StringAttribute{
 				Description: "Certificate password",
 				Optional:    true,
 				Sensitive:   true,
 			},
-			"folder": schema.StringAttribute{
-				Description: "Certificate folder path",
-				Optional:    true,
-			},
-
-			"url": schema.SingleNestedAttribute{
-				Description:   "Certificate url. Either file or url must be specified.",
-				Optional:      true,
-				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplaceIfConfigured()},
-
-				Attributes: map[string]schema.Attribute{
-					"url": schema.StringAttribute{
-						Description: "Certificate url",
-						Required:    true,
-					},
-					"use_default_credentials": schema.BoolAttribute{
-						Description: "Use default credentials",
-						Optional:    true,
-						Computed:    true,
-						Default:     booldefault.StaticBool(false),
-					},
-				},
-				Validators: []validator.Object{objectvalidator.ExactlyOneOf(path.MatchRoot("file"))},
-			},
-
 			"file": schema.SingleNestedAttribute{
 				Description:   "Certificate file. Either file or url must be specified.",
 				Optional:      true,
@@ -153,16 +145,24 @@ func (r *EntryCertificateResource) Schema(ctx context.Context, req resource.Sche
 				},
 				Validators: []validator.Object{objectvalidator.ExactlyOneOf(path.MatchRoot("url"))},
 			},
+			"url": schema.SingleNestedAttribute{
+				Description:   "Certificate url. Either file or url must be specified.",
+				Optional:      true,
+				PlanModifiers: []planmodifier.Object{objectplanmodifier.RequiresReplaceIfConfigured()},
 
-			"expiration": schema.StringAttribute{
-				CustomType:  timetypes.RFC3339Type{},
-				Description: "Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)",
-				Required:    true,
-			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "Certificate tags",
-				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"url": schema.StringAttribute{
+						Description: "Certificate url",
+						Required:    true,
+					},
+					"use_default_credentials": schema.BoolAttribute{
+						Description: "Use default credentials",
+						Optional:    true,
+						Computed:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+				},
+				Validators: []validator.Object{objectvalidator.ExactlyOneOf(path.MatchRoot("file"))},
 			},
 		},
 	}
@@ -208,7 +208,7 @@ func (r *EntryCertificateResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.ID)
+	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
@@ -232,7 +232,7 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 
 	entrycertificate := newEntryCertificateFromResourceModel(&states)
 
-	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.ID)
+	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.Id)
 	if err != nil {
 		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
 			resp.State.RemoveResource(ctx)
@@ -248,7 +248,7 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.ID)
+	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
