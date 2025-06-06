@@ -99,6 +99,7 @@ func (p *DvlsProvider) Resources(ctx context.Context) []func() resource.Resource
 		NewEntryCredentialAzureServicePrincipalResource,
 		NewEntryCredentialConnectionStringResource,
 		NewEntryCredentialSecretResource,
+		NewEntryCredentialSSHKeyResource,
 		NewEntryCredentialUsernamePasswordResource,
 		NewVaultResource,
 	}
@@ -111,6 +112,7 @@ func (p *DvlsProvider) DataSources(ctx context.Context) []func() datasource.Data
 		NewEntryCredentialAzureServicePrincipalDataSource,
 		NewEntryCredentialConnectionStringDataSource,
 		NewEntryCredentialSecretDataSource,
+		NewEntryCredentialSSHKeyDataSource,
 		NewEntryCredentialUsernamePasswordDataSource,
 		NewEntryHostDataSource,
 		NewEntryWebsiteDataSource,
