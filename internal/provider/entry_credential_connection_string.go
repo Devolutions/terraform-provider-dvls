@@ -6,57 +6,57 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func newEntryCredentialConnectionStringFromResourceModel(data *EntryCredentialConnectionStringResourceModel) dvls.Entry {
+func newEntryCredentialConnectionStringFromResourceModel(rm *EntryCredentialConnectionStringResourceModel) dvls.Entry {
 	var tags []string
 
-	for _, v := range data.Tags {
+	for _, v := range rm.Tags {
 		tags = append(tags, v.ValueString())
 	}
 
 	entryCredentialConnectionString := dvls.Entry{
-		Id:          data.Id.ValueString(),
-		VaultId:     data.VaultId.ValueString(),
-		Name:        data.Name.ValueString(),
-		Path:        data.Folder.ValueString(),
+		Id:          rm.Id.ValueString(),
+		VaultId:     rm.VaultId.ValueString(),
+		Name:        rm.Name.ValueString(),
+		Path:        rm.Folder.ValueString(),
 		Type:        dvls.EntryCredentialType,
 		SubType:     dvls.EntryCredentialSubTypeConnectionString,
-		Description: data.Description.ValueString(),
+		Description: rm.Description.ValueString(),
 		Tags:        tags,
 		Data: dvls.EntryCredentialConnectionStringData{
-			ConnectionString: data.ConnectionString.ValueString(),
+			ConnectionString: rm.ConnectionString.ValueString(),
 		},
 	}
 
 	return entryCredentialConnectionString
 }
 
-func setEntryCredentialConnectionStringResourceModel(entryCredentialConnectionString dvls.Entry, data *EntryCredentialConnectionStringResourceModel) {
+func setEntryCredentialConnectionStringResourceModel(entry dvls.Entry, rm *EntryCredentialConnectionStringResourceModel) {
 	var model EntryCredentialConnectionStringResourceModel
 
-	model.Id = basetypes.NewStringValue(entryCredentialConnectionString.Id)
-	model.VaultId = basetypes.NewStringValue(entryCredentialConnectionString.VaultId)
-	model.Name = basetypes.NewStringValue(entryCredentialConnectionString.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if entryCredentialConnectionString.Path != "" {
-		model.Folder = basetypes.NewStringValue(entryCredentialConnectionString.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if entryCredentialConnectionString.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialConnectionString.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entryCredentialConnectionString.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range entryCredentialConnectionString.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if entryCredentialConnectionString.Data != nil {
-		data, ok := entryCredentialConnectionString.GetCredentialConnectionStringData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialConnectionStringData()
 		if ok {
 			if data.ConnectionString != "" {
 				model.ConnectionString = basetypes.NewStringValue(data.ConnectionString)
@@ -64,36 +64,36 @@ func setEntryCredentialConnectionStringResourceModel(entryCredentialConnectionSt
 		}
 	}
 
-	*data = model
+	*rm = model
 }
 
-func setEntryCredentialConnectionStringDataModel(entryCredentialConnectionString dvls.Entry, data *EntryCredentialConnectionStringDataSourceModel) {
+func setEntryCredentialConnectionStringDataModel(entry dvls.Entry, dsm *EntryCredentialConnectionStringDataSourceModel) {
 	var model EntryCredentialConnectionStringDataSourceModel
 
-	model.Id = basetypes.NewStringValue(entryCredentialConnectionString.Id)
-	model.VaultId = basetypes.NewStringValue(entryCredentialConnectionString.VaultId)
-	model.Name = basetypes.NewStringValue(entryCredentialConnectionString.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if entryCredentialConnectionString.Path != "" {
-		model.Folder = basetypes.NewStringValue(entryCredentialConnectionString.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if entryCredentialConnectionString.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialConnectionString.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entryCredentialConnectionString.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range entryCredentialConnectionString.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if entryCredentialConnectionString.Data != nil {
-		data, ok := entryCredentialConnectionString.GetCredentialConnectionStringData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialConnectionStringData()
 		if ok {
 			if data.ConnectionString != "" {
 				model.ConnectionString = basetypes.NewStringValue(data.ConnectionString)
@@ -101,5 +101,5 @@ func setEntryCredentialConnectionStringDataModel(entryCredentialConnectionString
 		}
 	}
 
-	*data = model
+	*dsm = model
 }

@@ -6,59 +6,59 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func newEntryCredentialAzureServicePrincipalFromResourceModel(data *EntryCredentialAzureServicePrincipalResourceModel) dvls.Entry {
+func newEntryCredentialAzureServicePrincipalFromResourceModel(rm *EntryCredentialAzureServicePrincipalResourceModel) dvls.Entry {
 	var tags []string
 
-	for _, v := range data.Tags {
+	for _, v := range rm.Tags {
 		tags = append(tags, v.ValueString())
 	}
 
 	entryCredentialAzureServicePrincipal := dvls.Entry{
-		Id:          data.Id.ValueString(),
-		VaultId:     data.VaultId.ValueString(),
-		Name:        data.Name.ValueString(),
-		Path:        data.Folder.ValueString(),
+		Id:          rm.Id.ValueString(),
+		VaultId:     rm.VaultId.ValueString(),
+		Name:        rm.Name.ValueString(),
+		Path:        rm.Folder.ValueString(),
 		Type:        dvls.EntryCredentialType,
 		SubType:     dvls.EntryCredentialSubTypeAzureServicePrincipal,
-		Description: data.Description.ValueString(),
+		Description: rm.Description.ValueString(),
 		Tags:        tags,
 		Data: dvls.EntryCredentialAzureServicePrincipalData{
-			ClientId:     data.ClientId.ValueString(),
-			ClientSecret: data.ClientSecret.ValueString(),
-			TenantId:     data.TenantId.ValueString(),
+			ClientId:     rm.ClientId.ValueString(),
+			ClientSecret: rm.ClientSecret.ValueString(),
+			TenantId:     rm.TenantId.ValueString(),
 		},
 	}
 
 	return entryCredentialAzureServicePrincipal
 }
 
-func setEntryCredentialAzureServicePrincipalResourceModel(entryCredentialAzureServicePrincipal dvls.Entry, data *EntryCredentialAzureServicePrincipalResourceModel) {
+func setEntryCredentialAzureServicePrincipalResourceModel(entry dvls.Entry, rm *EntryCredentialAzureServicePrincipalResourceModel) {
 	var model EntryCredentialAzureServicePrincipalResourceModel
 
-	model.Id = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.Id)
-	model.VaultId = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.VaultId)
-	model.Name = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if entryCredentialAzureServicePrincipal.Path != "" {
-		model.Folder = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if entryCredentialAzureServicePrincipal.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entryCredentialAzureServicePrincipal.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range entryCredentialAzureServicePrincipal.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if entryCredentialAzureServicePrincipal.Data != nil {
-		data, ok := entryCredentialAzureServicePrincipal.GetCredentialAzureServicePrincipalData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialAzureServicePrincipalData()
 		if ok {
 			if data.ClientId != "" {
 				model.ClientId = basetypes.NewStringValue(data.ClientId)
@@ -74,36 +74,36 @@ func setEntryCredentialAzureServicePrincipalResourceModel(entryCredentialAzureSe
 		}
 	}
 
-	*data = model
+	*rm = model
 }
 
-func setEntryCredentialAzureServicePrincipalDataModel(entryCredentialAzureServicePrincipal dvls.Entry, data *EntryCredentialAzureServicePrincipalDataSourceModel) {
+func setEntryCredentialAzureServicePrincipalDataModel(entry dvls.Entry, dsm *EntryCredentialAzureServicePrincipalDataSourceModel) {
 	var model EntryCredentialAzureServicePrincipalDataSourceModel
 
-	model.Id = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.Id)
-	model.VaultId = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.VaultId)
-	model.Name = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if entryCredentialAzureServicePrincipal.Path != "" {
-		model.Folder = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if entryCredentialAzureServicePrincipal.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialAzureServicePrincipal.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entryCredentialAzureServicePrincipal.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range entryCredentialAzureServicePrincipal.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if entryCredentialAzureServicePrincipal.Data != nil {
-		data, ok := entryCredentialAzureServicePrincipal.GetCredentialAzureServicePrincipalData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialAzureServicePrincipalData()
 		if ok {
 			if data.ClientId != "" {
 				model.ClientId = basetypes.NewStringValue(data.ClientId)
@@ -119,5 +119,5 @@ func setEntryCredentialAzureServicePrincipalDataModel(entryCredentialAzureServic
 		}
 	}
 
-	*data = model
+	*dsm = model
 }
