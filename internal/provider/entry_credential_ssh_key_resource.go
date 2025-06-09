@@ -97,7 +97,6 @@ func (r *EntryCredentialSSHKeyResource) Schema(ctx context.Context, req resource
 			"public_key": schema.StringAttribute{
 				Description: "The entry credential public key.",
 				Optional:    true,
-				Sensitive:   true,
 			},
 		},
 	}

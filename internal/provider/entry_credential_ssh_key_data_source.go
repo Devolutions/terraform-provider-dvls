@@ -93,7 +93,6 @@ func (d *EntryCredentialSSHKeyDataSource) Schema(ctx context.Context, req dataso
 			"public_key": schema.StringAttribute{
 				Description: "The entry credential public key data.",
 				Computed:    true,
-				Sensitive:   true,
 			},
 		},
 	}
