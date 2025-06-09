@@ -6,60 +6,60 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func newEntryCredentialSSHKeyFromResourceModel(data *EntryCredentialSSHKeyResourceModel) dvls.Entry {
+func newEntryCredentialSSHKeyFromResourceModel(rm *EntryCredentialSSHKeyResourceModel) dvls.Entry {
 	var tags []string
 
-	for _, v := range data.Tags {
+	for _, v := range rm.Tags {
 		tags = append(tags, v.ValueString())
 	}
 
 	entryCredentialSSHKey := dvls.Entry{
-		Id:          data.Id.ValueString(),
-		VaultId:     data.VaultId.ValueString(),
-		Name:        data.Name.ValueString(),
-		Path:        data.Folder.ValueString(),
+		Id:          rm.Id.ValueString(),
+		VaultId:     rm.VaultId.ValueString(),
+		Name:        rm.Name.ValueString(),
+		Path:        rm.Folder.ValueString(),
 		Type:        dvls.EntryCredentialType,
 		SubType:     dvls.EntryCredentialSubTypePrivateKey,
-		Description: data.Description.ValueString(),
+		Description: rm.Description.ValueString(),
 		Tags:        tags,
 		Data: dvls.EntryCredentialPrivateKeyData{
-			OverridePassword: data.Password.ValueString(),
-			Passphrase:       data.Passphrase.ValueString(),
-			PrivateKey:       data.PrivateKeyData.ValueString(),
-			PublicKey:        data.PublicKey.ValueString(),
+			OverridePassword: rm.Password.ValueString(),
+			Passphrase:       rm.Passphrase.ValueString(),
+			PrivateKey:       rm.PrivateKeyData.ValueString(),
+			PublicKey:        rm.PublicKey.ValueString(),
 		},
 	}
 
 	return entryCredentialSSHKey
 }
 
-func setEntryCredentialSSHKeyResourceModel(entryCredentialSSHKey dvls.Entry, data *EntryCredentialSSHKeyResourceModel) {
+func setEntryCredentialSSHKeyResourceModel(entry dvls.Entry, rm *EntryCredentialSSHKeyResourceModel) {
 	var model EntryCredentialSSHKeyResourceModel
 
-	model.Id = basetypes.NewStringValue(entryCredentialSSHKey.Id)
-	model.VaultId = basetypes.NewStringValue(entryCredentialSSHKey.VaultId)
-	model.Name = basetypes.NewStringValue(entryCredentialSSHKey.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if entryCredentialSSHKey.Path != "" {
-		model.Folder = basetypes.NewStringValue(entryCredentialSSHKey.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if entryCredentialSSHKey.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialSSHKey.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entryCredentialSSHKey.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range entryCredentialSSHKey.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if entryCredentialSSHKey.Data != nil {
-		data, ok := entryCredentialSSHKey.GetCredentialPrivateKeyData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialPrivateKeyData()
 		if ok {
 			if data.OverridePassword != "" {
 				model.Password = basetypes.NewStringValue(data.OverridePassword)
@@ -79,36 +79,36 @@ func setEntryCredentialSSHKeyResourceModel(entryCredentialSSHKey dvls.Entry, dat
 		}
 	}
 
-	*data = model
+	*rm = model
 }
 
-func setEntryCredentialSSHKeyDataModel(entryCredentialSSHKey dvls.Entry, data *EntryCredentialSSHKeyDataSourceModel) {
+func setEntryCredentialSSHKeyDataModel(entry dvls.Entry, dsm *EntryCredentialSSHKeyDataSourceModel) {
 	var model EntryCredentialSSHKeyDataSourceModel
 
-	model.Id = basetypes.NewStringValue(entryCredentialSSHKey.Id)
-	model.VaultId = basetypes.NewStringValue(entryCredentialSSHKey.VaultId)
-	model.Name = basetypes.NewStringValue(entryCredentialSSHKey.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if entryCredentialSSHKey.Path != "" {
-		model.Folder = basetypes.NewStringValue(entryCredentialSSHKey.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if entryCredentialSSHKey.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialSSHKey.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entryCredentialSSHKey.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range entryCredentialSSHKey.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if entryCredentialSSHKey.Data != nil {
-		data, ok := entryCredentialSSHKey.GetCredentialPrivateKeyData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialPrivateKeyData()
 		if ok {
 			if data.OverridePassword != "" {
 				model.Password = basetypes.NewStringValue(data.OverridePassword)
@@ -128,5 +128,5 @@ func setEntryCredentialSSHKeyDataModel(entryCredentialSSHKey dvls.Entry, data *E
 		}
 	}
 
-	*data = model
+	*dsm = model
 }

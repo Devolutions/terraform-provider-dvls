@@ -6,59 +6,59 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func newEntryCredentialUsernamePasswordFromResourceModel(data *EntryCredentialUsernamePasswordResourceModel) dvls.Entry {
+func newEntryCredentialUsernamePasswordFromResourceModel(rm *EntryCredentialUsernamePasswordResourceModel) dvls.Entry {
 	var tags []string
 
-	for _, v := range data.Tags {
+	for _, v := range rm.Tags {
 		tags = append(tags, v.ValueString())
 	}
 
 	entryCredentialUsernamePassword := dvls.Entry{
-		Id:          data.Id.ValueString(),
-		VaultId:     data.VaultId.ValueString(),
-		Name:        data.Name.ValueString(),
-		Path:        data.Folder.ValueString(),
+		Id:          rm.Id.ValueString(),
+		VaultId:     rm.VaultId.ValueString(),
+		Name:        rm.Name.ValueString(),
+		Path:        rm.Folder.ValueString(),
 		Type:        dvls.EntryCredentialType,
 		SubType:     dvls.EntryCredentialSubTypeDefault,
-		Description: data.Description.ValueString(),
+		Description: rm.Description.ValueString(),
 		Tags:        tags,
 		Data: dvls.EntryCredentialDefaultData{
-			Username: data.Username.ValueString(),
-			Domain:   data.Domain.ValueString(),
-			Password: data.Password.ValueString(),
+			Username: rm.Username.ValueString(),
+			Domain:   rm.Domain.ValueString(),
+			Password: rm.Password.ValueString(),
 		},
 	}
 
 	return entryCredentialUsernamePassword
 }
 
-func setEntryCredentialUsernamePasswordResourceModel(entryCredentialUsernamePassword dvls.Entry, data *EntryCredentialUsernamePasswordResourceModel) {
+func setEntryCredentialUsernamePasswordResourceModel(entry dvls.Entry, rm *EntryCredentialUsernamePasswordResourceModel) {
 	var model EntryCredentialUsernamePasswordResourceModel
 
-	model.Id = basetypes.NewStringValue(entryCredentialUsernamePassword.Id)
-	model.VaultId = basetypes.NewStringValue(entryCredentialUsernamePassword.VaultId)
-	model.Name = basetypes.NewStringValue(entryCredentialUsernamePassword.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if entryCredentialUsernamePassword.Path != "" {
-		model.Folder = basetypes.NewStringValue(entryCredentialUsernamePassword.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if entryCredentialUsernamePassword.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialUsernamePassword.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entryCredentialUsernamePassword.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range entryCredentialUsernamePassword.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if entryCredentialUsernamePassword.Data != nil {
-		data, ok := entryCredentialUsernamePassword.GetCredentialDefaultData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialDefaultData()
 		if ok {
 			if data.Username != "" {
 				model.Username = basetypes.NewStringValue(data.Username)
@@ -74,36 +74,36 @@ func setEntryCredentialUsernamePasswordResourceModel(entryCredentialUsernamePass
 		}
 	}
 
-	*data = model
+	*rm = model
 }
 
-func setEntryCredentialUsernamePasswordDataModel(entryCredentialUsernamePassword dvls.Entry, data *EntryCredentialUsernamePasswordDataSourceModel) {
+func setEntryCredentialUsernamePasswordDataModel(entry dvls.Entry, dsm *EntryCredentialUsernamePasswordDataSourceModel) {
 	var model EntryCredentialUsernamePasswordDataSourceModel
 
-	model.Id = basetypes.NewStringValue(entryCredentialUsernamePassword.Id)
-	model.VaultId = basetypes.NewStringValue(entryCredentialUsernamePassword.VaultId)
-	model.Name = basetypes.NewStringValue(entryCredentialUsernamePassword.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if entryCredentialUsernamePassword.Path != "" {
-		model.Folder = basetypes.NewStringValue(entryCredentialUsernamePassword.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if entryCredentialUsernamePassword.Description != "" {
-		model.Description = basetypes.NewStringValue(entryCredentialUsernamePassword.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entryCredentialUsernamePassword.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range entryCredentialUsernamePassword.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if entryCredentialUsernamePassword.Data != nil {
-		data, ok := entryCredentialUsernamePassword.GetCredentialDefaultData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialDefaultData()
 		if ok {
 			if data.Username != "" {
 				model.Username = basetypes.NewStringValue(data.Username)
@@ -119,5 +119,5 @@ func setEntryCredentialUsernamePasswordDataModel(entryCredentialUsernamePassword
 		}
 	}
 
-	*data = model
+	*dsm = model
 }
