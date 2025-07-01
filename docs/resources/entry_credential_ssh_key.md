@@ -20,6 +20,7 @@ resource "dvls_entry_credential_ssh_key" "example" {
   description = "bar"
   tags        = ["foo"]
 
+  username         = "foo"
   password         = "foo"
   passphrase       = "bar"
   private_key_data = "foo"
@@ -44,6 +45,7 @@ resource "dvls_entry_credential_ssh_key" "example" {
 - `private_key_data` (String, Sensitive) The entry credential private key.
 - `public_key` (String) The entry credential public key.
 - `tags` (List of String) A list of tags to add to the entry.
+- `username` (String) The entry credential username.
 
 ### Read-Only
 
@@ -52,6 +54,8 @@ resource "dvls_entry_credential_ssh_key" "example" {
 ## Import
 
 Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
 # This resource can be imported using `<vault_id>/<entry_id>` format, e.g.

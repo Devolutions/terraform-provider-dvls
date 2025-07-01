@@ -7,6 +7,7 @@ Terraform Provider for managing your Devolutions Server instance.
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.18
+- [Devolutions Server](https://devolutions.net/server) >= 2025.2.4.0
 
 ## Building The Provider
 
@@ -71,8 +72,8 @@ Replace `/Users/USERNAME/go/bin` with the path to the compiled provider binary a
 Then run the following command, assuming you are on macOS or Linux:
 
 ```shell
-go build -o ~/go/bin/terraform-provider-dvls_v0.4.0
-chmod +x ~/go/bin/terraform-provider-dvls_v0.4.0
+go build -o ~/go/bin/terraform-provider-dvls_v0.5.0
+chmod +x ~/go/bin/terraform-provider-dvls_v0.5.0
 ```
 Notes: the version number should match the version of the provider you are working on.
 
