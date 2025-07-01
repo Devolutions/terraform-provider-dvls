@@ -5,6 +5,7 @@ resource "dvls_entry_credential_ssh_key" "example" {
   description = "bar"
   tags        = ["foo"]
 
+  username         = "foo"
   password         = "foo"
   passphrase       = "bar"
   private_key_data = "foo"

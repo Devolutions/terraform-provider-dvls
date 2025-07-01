@@ -23,10 +23,11 @@ func newEntryCredentialSSHKeyFromResourceModel(rm *EntryCredentialSSHKeyResource
 		Description: rm.Description.ValueString(),
 		Tags:        tags,
 		Data: dvls.EntryCredentialPrivateKeyData{
-			OverridePassword: rm.Password.ValueString(),
-			Passphrase:       rm.Passphrase.ValueString(),
-			PrivateKey:       rm.PrivateKeyData.ValueString(),
-			PublicKey:        rm.PublicKey.ValueString(),
+			Username:   rm.Username.ValueString(),
+			Password:   rm.Password.ValueString(),
+			Passphrase: rm.Passphrase.ValueString(),
+			PrivateKey: rm.PrivateKeyData.ValueString(),
+			PublicKey:  rm.PublicKey.ValueString(),
 		},
 	}
 
@@ -61,8 +62,12 @@ func setEntryCredentialSSHKeyResourceModel(entry dvls.Entry, rm *EntryCredential
 	if entry.Data != nil {
 		data, ok := entry.GetCredentialPrivateKeyData()
 		if ok {
-			if data.OverridePassword != "" {
-				model.Password = basetypes.NewStringValue(data.OverridePassword)
+			if data.Username != "" {
+				model.Username = basetypes.NewStringValue(data.Username)
+			}
+
+			if data.Password != "" {
+				model.Password = basetypes.NewStringValue(data.Password)
 			}
 
 			if data.Passphrase != "" {
@@ -110,8 +115,12 @@ func setEntryCredentialSSHKeyDataModel(entry dvls.Entry, dsm *EntryCredentialSSH
 	if entry.Data != nil {
 		data, ok := entry.GetCredentialPrivateKeyData()
 		if ok {
-			if data.OverridePassword != "" {
-				model.Password = basetypes.NewStringValue(data.OverridePassword)
+			if data.Username != "" {
+				model.Username = basetypes.NewStringValue(data.Username)
+			}
+
+			if data.Password != "" {
+				model.Password = basetypes.NewStringValue(data.Password)
 			}
 
 			if data.Passphrase != "" {

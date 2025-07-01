@@ -37,3 +37,4 @@ data "dvls_entry_credential_ssh_key" "example" {
 - `private_key_data` (String, Sensitive) The entry credential private key data.
 - `public_key` (String) The entry credential public key data.
 - `tags` (List of String) A list of tags added to the entry.
+- `username` (String) The entry credential username.

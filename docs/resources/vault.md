@@ -33,8 +33,8 @@ resource "dvls_vault" "example" {
 
 - `description` (String) Vault description
 - `master_password` (String, Sensitive) Vault master password
-- `security_level` (String) Vault security level. Must be one of the following: [standard, high]
-- `visibility` (String) Vault visibility. Must be one of the following: [default, public, private]
+- `security_level` (String) Vault security level. Must be one of the following: [high, standard]
+- `visibility` (String) Vault visibility. Must be one of the following: [public, private, default]
 
 ### Read-Only
 
@@ -43,6 +43,8 @@ resource "dvls_vault" "example" {
 ## Import
 
 Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
 terraform import dvls_vault.example 00000000-0000-0000-0000-000000000000

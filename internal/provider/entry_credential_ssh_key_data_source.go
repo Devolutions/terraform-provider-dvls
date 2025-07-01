@@ -33,6 +33,7 @@ type EntryCredentialSSHKeyDataSourceModel struct {
 	Tags        []types.String `tfsdk:"tags"`
 
 	// General
+	Username       types.String `tfsdk:"username"`
 	Password       types.String `tfsdk:"password"`
 	Passphrase     types.String `tfsdk:"passphrase"`
 	PrivateKeyData types.String `tfsdk:"private_key_data"`
@@ -73,6 +74,10 @@ func (d *EntryCredentialSSHKeyDataSource) Schema(ctx context.Context, req dataso
 			"tags": schema.ListAttribute{
 				ElementType: types.StringType,
 				Description: "A list of tags added to the entry.",
+				Computed:    true,
+			},
+			"username": schema.StringAttribute{
+				Description: "The entry credential username.",
 				Computed:    true,
 			},
 			"password": schema.StringAttribute{
@@ -128,7 +133,7 @@ func (d *EntryCredentialSSHKeyDataSource) Read(ctx context.Context, req datasour
 
 	entryCredentialSSHKey, err := d.client.Entries.Credential.GetById(data.VaultId.ValueString(), data.Id.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("unable to read username password credential entry", err.Error())
+		resp.Diagnostics.AddError("unable to read SSH key credential entry", err.Error())
 		return
 	}
 

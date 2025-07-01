@@ -47,6 +47,8 @@ resource "dvls_entry_credential_secret" "example" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # This resource can be imported using `<vault_id>/<entry_id>` format, e.g.
 terraform import dvls_entry_credential_secret.example 00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-000000000000

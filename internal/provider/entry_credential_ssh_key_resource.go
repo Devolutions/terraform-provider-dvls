@@ -37,6 +37,7 @@ type EntryCredentialSSHKeyResourceModel struct {
 	Tags        []types.String `tfsdk:"tags"`
 
 	// General
+	Username       types.String `tfsdk:"username"`
 	Password       types.String `tfsdk:"password"`
 	Passphrase     types.String `tfsdk:"passphrase"`
 	PrivateKeyData types.String `tfsdk:"private_key_data"`
@@ -77,6 +78,10 @@ func (r *EntryCredentialSSHKeyResource) Schema(ctx context.Context, req resource
 			"tags": schema.ListAttribute{
 				ElementType: types.StringType,
 				Description: "A list of tags to add to the entry.",
+				Optional:    true,
+			},
+			"username": schema.StringAttribute{
+				Description: "The entry credential username.",
 				Optional:    true,
 			},
 			"password": schema.StringAttribute{
