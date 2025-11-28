@@ -1,4 +1,4 @@
-# Terraform Provider Dvls (Terraform Plugin Framework)
+# Terraform Provider DVLS (Terraform Plugin Framework)
 :warning: **This provider is a work in progress, expect breaking changes between releases** :warning:
 
 Terraform Provider for managing your Devolutions Server instance.
