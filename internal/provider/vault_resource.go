@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -33,12 +32,12 @@ type VaultResource struct {
 
 // VaultResourceModel describes the resource data model.
 type VaultResourceModel struct {
-	Id             types.String `tfsdk:"id"`
-	Name           types.String `tfsdk:"name"`
-	Description    types.String `tfsdk:"description"`
-	Visibility     types.String `tfsdk:"visibility"`
-	SecurityLevel  types.String `tfsdk:"security_level"`
-	MasterPassword types.String `tfsdk:"master_password"`
+	Id            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
+	Description   types.String `tfsdk:"description"`
+	Visibility    types.String `tfsdk:"visibility"`
+	SecurityLevel types.String `tfsdk:"security_level"`
+	ContentType   types.String `tfsdk:"content_type"`
 }
 
 func (r *VaultResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -77,10 +76,12 @@ func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Default:     stringdefault.StaticString("standard"),
 				Validators:  []validator.String{vaultSecurityLevelValidator{}},
 			},
-			"master_password": schema.StringAttribute{
-				Description: "Vault master password",
+			"content_type": schema.StringAttribute{
+				Description: fmt.Sprintf("Vault content type. Must be one of: %s", listMapValues(vaultContentTypes)),
 				Optional:    true,
-				Sensitive:   true,
+				Computed:    true,
+				Default:     stringdefault.StaticString("everything"),
+				Validators:  []validator.String{vaultContentTypeValidator{}},
 			},
 		},
 	}
@@ -121,12 +122,7 @@ func (r *VaultResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 	vault.Id = uuid.NewString()
 
-	var options dvls.VaultOptions
-	if !plan.MasterPassword.IsNull() {
-		options.Password = plan.MasterPassword.ValueStringPointer()
-	}
-
-	err = r.client.Vaults.New(vault, &options)
+	vault, err = r.client.Vaults.New(vault)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to create vault", err.Error())
 		return
@@ -163,18 +159,6 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	setVaultResourceModel(vault, state)
 
-	valid, err := r.client.Vaults.ValidatePassword(vault.Id, state.MasterPassword.ValueString())
-	if err != nil && strings.Contains(err.Error(), "unexpected result code 0 (Error)") {
-		state.MasterPassword = basetypes.NewStringNull()
-	} else if err != nil {
-		resp.Diagnostics.AddError("unable validate vault password", err.Error())
-		return
-	}
-
-	if !valid {
-		state.MasterPassword = basetypes.NewStringNull()
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -198,12 +182,7 @@ func (r *VaultResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	var options dvls.VaultOptions
-	if !plan.MasterPassword.IsNull() {
-		options.Password = plan.MasterPassword.ValueStringPointer()
-	}
-
-	err = r.client.Vaults.Update(vault, &options)
+	vault, err = r.client.Vaults.Update(vault)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update vault", err.Error())
 		return

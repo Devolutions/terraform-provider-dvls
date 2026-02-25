@@ -83,3 +83,29 @@ func (d vaultVisibilityValidator) ValidateString(_ context.Context, request vali
 		return
 	}
 }
+
+type vaultContentTypeValidator struct{}
+
+func (validator vaultContentTypeValidator) Description(_ context.Context) string {
+	values := listMapValues(vaultContentTypes)
+	return fmt.Sprintf("valid values are: %v", values)
+}
+
+func (validator vaultContentTypeValidator) MarkdownDescription(ctx context.Context) string {
+	return validator.Description(ctx)
+}
+
+func (d vaultContentTypeValidator) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
+	if request.ConfigValue.IsNull() || request.ConfigValue.IsUnknown() {
+		return
+	}
+
+	contentType := request.ConfigValue.ValueString()
+
+	_, err := lookupMapValue(vaultContentTypes, contentType)
+	if err != nil {
+		values := listMapValues(vaultContentTypes)
+		response.Diagnostics.AddError("vault content type is invalid", fmt.Sprintf("valid values are: %s", values))
+		return
+	}
+}

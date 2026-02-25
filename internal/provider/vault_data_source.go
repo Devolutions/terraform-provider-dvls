@@ -5,14 +5,17 @@ import (
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &VaultDataSource{}
+var _ datasource.DataSourceWithConfigValidators = &VaultDataSource{}
 
 func NewVaultDataSource() datasource.DataSource {
 	return &VaultDataSource{}
@@ -30,6 +33,7 @@ type VaultDataSourceModel struct {
 	Description   types.String `tfsdk:"description"`
 	Visibility    types.String `tfsdk:"visibility"`
 	SecurityLevel types.String `tfsdk:"security_level"`
+	ContentType   types.String `tfsdk:"content_type"`
 }
 
 func (d *VaultDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -43,11 +47,13 @@ func (d *VaultDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Vault ID",
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				Validators:  []validator.String{vaultIdValidator{}},
 			},
 			"name": schema.StringAttribute{
 				Description: "Vault name",
+				Optional:    true,
 				Computed:    true,
 			},
 			"description": schema.StringAttribute{
@@ -62,7 +68,20 @@ func (d *VaultDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 				Description: "Vault security level",
 				Computed:    true,
 			},
+			"content_type": schema.StringAttribute{
+				Description: "Vault content type",
+				Computed:    true,
+			},
 		},
+	}
+}
+
+func (d *VaultDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
+	return []datasource.ConfigValidator{
+		datasourcevalidator.AtLeastOneOf(
+			path.MatchRoot("id"),
+			path.MatchRoot("name"),
+		),
 	}
 }
 
@@ -94,10 +113,21 @@ func (d *VaultDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	vault, err := d.client.Vaults.Get(data.Id.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("unable to read vault", err.Error())
-		return
+	var vault dvls.Vault
+	var err error
+
+	if !data.Id.IsNull() && !data.Id.IsUnknown() {
+		vault, err = d.client.Vaults.Get(data.Id.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("unable to read vault", err.Error())
+			return
+		}
+	} else {
+		vault, err = d.client.Vaults.GetByName(data.Name.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("unable to read vault", err.Error())
+			return
+		}
 	}
 
 	setVaultDataModel(vault, data)

@@ -14,11 +14,10 @@ A DVLS Vault
 
 ```terraform
 resource "dvls_vault" "example" {
-  name            = "foo"
-  description     = "bar"
-  visibility      = "private"
-  security_level  = "high"
-  master_password = "foo!"
+  name           = "foo"
+  description    = "bar"
+  visibility     = "private"
+  security_level = "high"
 }
 ```
 
@@ -31,9 +30,9 @@ resource "dvls_vault" "example" {
 
 ### Optional
 
+- `content_type` (String) Vault content type. Must be one of: [everything, secrets, credentials, business_information]
 - `description` (String) Vault description
-- `master_password` (String, Sensitive) Vault master password
-- `security_level` (String) Vault security level. Must be one of the following: [high, standard]
+- `security_level` (String) Vault security level. Must be one of the following: [standard, high]
 - `visibility` (String) Vault visibility. Must be one of the following: [public, private, default]
 
 ### Read-Only
