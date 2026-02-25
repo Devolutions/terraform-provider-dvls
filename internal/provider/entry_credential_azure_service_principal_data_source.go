@@ -2,17 +2,21 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &EntryCredentialAzureServicePrincipalDataSource{}
+var _ datasource.DataSourceWithConfigValidators = &EntryCredentialAzureServicePrincipalDataSource{}
 
 func NewEntryCredentialAzureServicePrincipalDataSource() datasource.DataSource {
 	return &EntryCredentialAzureServicePrincipalDataSource{}
@@ -49,7 +53,8 @@ func (d *EntryCredentialAzureServicePrincipalDataSource) Schema(ctx context.Cont
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of the entry.",
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				Validators:  []validator.String{entryIdValidator{}},
 			},
 			"vault_id": schema.StringAttribute{
@@ -59,10 +64,12 @@ func (d *EntryCredentialAzureServicePrincipalDataSource) Schema(ctx context.Cont
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the entry.",
+				Optional:    true,
 				Computed:    true,
 			},
 			"folder": schema.StringAttribute{
-				Description: "The folder path of the entry.",
+				Description: "The folder path to search in. Returns entries in the specified folder and all sub-folders.",
+				Optional:    true,
 				Computed:    true,
 			},
 			"description": schema.StringAttribute{
@@ -88,6 +95,15 @@ func (d *EntryCredentialAzureServicePrincipalDataSource) Schema(ctx context.Cont
 				Computed:    true,
 			},
 		},
+	}
+}
+
+func (d *EntryCredentialAzureServicePrincipalDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
+	return []datasource.ConfigValidator{
+		datasourcevalidator.AtLeastOneOf(
+			path.MatchRoot("id"),
+			path.MatchRoot("name"),
+		),
 	}
 }
 
@@ -119,16 +135,42 @@ func (d *EntryCredentialAzureServicePrincipalDataSource) Read(ctx context.Contex
 		return
 	}
 
-	entryCredentialAzureServicePrincipal, err := d.client.Entries.Credential.GetById(data.VaultId.ValueString(), data.Id.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("unable to read azure service principal credential entry", err.Error())
-		return
-	}
+	var entryCredentialAzureServicePrincipal dvls.Entry
+	var err error
 
-	if entryCredentialAzureServicePrincipal.Type != dvls.EntryCredentialType ||
-		entryCredentialAzureServicePrincipal.SubType != dvls.EntryCredentialSubTypeAzureServicePrincipal {
-		resp.Diagnostics.AddError("invalid entry type", "expected an azure service principal credential entry.")
-		return
+	if !data.Id.IsNull() && !data.Id.IsUnknown() {
+		entryCredentialAzureServicePrincipal, err = d.client.Entries.Credential.GetById(data.VaultId.ValueString(), data.Id.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("unable to read azure service principal credential entry", err.Error())
+			return
+		}
+		if entryCredentialAzureServicePrincipal.Type != dvls.EntryCredentialType || entryCredentialAzureServicePrincipal.SubType != dvls.EntryCredentialSubTypeAzureServicePrincipal {
+			resp.Diagnostics.AddError("invalid entry type", "expected an azure service principal credential entry.")
+			return
+		}
+	} else {
+		var path *string
+		if !data.Folder.IsNull() && !data.Folder.IsUnknown() {
+			v := data.Folder.ValueString()
+			path = &v
+		}
+		entryCredentialAzureServicePrincipal, err = d.client.Entries.Credential.GetByName(
+			data.VaultId.ValueString(),
+			data.Name.ValueString(),
+			dvls.EntryCredentialSubTypeAzureServicePrincipal,
+			dvls.GetByNameOptions{Path: path},
+		)
+		if err != nil {
+			if errors.Is(err, dvls.ErrMultipleEntriesFound) {
+				resp.Diagnostics.AddError(
+					"multiple entries found",
+					fmt.Sprintf("more than one entry named %q found, use id to target the correct one", data.Name.ValueString()),
+				)
+				return
+			}
+			resp.Diagnostics.AddError("unable to read azure service principal credential entry", err.Error())
+			return
+		}
 	}
 
 	setEntryCredentialAzureServicePrincipalDataModel(entryCredentialAzureServicePrincipal, data)
