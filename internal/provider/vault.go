@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Devolutions/go-dvls"
@@ -102,6 +103,8 @@ func listMapValues[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.Vault
 	for _, v := range lookup {
 		values = append(values, v)
 	}
+
+	sort.Strings(values)
 
 	return fmt.Sprintf("[%s]", strings.Join(values, ", "))
 }

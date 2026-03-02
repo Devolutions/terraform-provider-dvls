@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
@@ -117,6 +118,9 @@ func (d *VaultDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	var err error
 
 	if !data.Id.IsNull() && !data.Id.IsUnknown() {
+		if !data.Name.IsNull() {
+			resp.Diagnostics.AddWarning("id takes precedence", "When id is provided, name is ignored.")
+		}
 		vault, err = d.client.Vaults.Get(data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("unable to read vault", err.Error())
@@ -125,6 +129,13 @@ func (d *VaultDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	} else {
 		vault, err = d.client.Vaults.GetByName(data.Name.ValueString())
 		if err != nil {
+			if errors.Is(err, dvls.ErrMultipleVaultsFound) {
+				resp.Diagnostics.AddError(
+					"multiple vaults found",
+					fmt.Sprintf("more than one vault named %q found, use id to target the correct one", data.Name.ValueString()),
+				)
+				return
+			}
 			resp.Diagnostics.AddError("unable to read vault", err.Error())
 			return
 		}

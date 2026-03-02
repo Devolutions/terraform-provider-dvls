@@ -79,8 +79,8 @@ Replace `/Users/USERNAME/go/bin` with the path to the compiled provider binary a
 Then run the following command, assuming you are on macOS or Linux:
 
 ```shell
-go build -o ~/go/bin/terraform-provider-dvls_v0.5.0
-chmod +x ~/go/bin/terraform-provider-dvls_v0.5.0
+go build -o ~/go/bin/terraform-provider-dvls_v0.6.0
+chmod +x ~/go/bin/terraform-provider-dvls_v0.6.0
 ```
 Notes: the version number should match the version of the provider you are working on.
 

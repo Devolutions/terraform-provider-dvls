@@ -141,13 +141,7 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	vault, err := newVaultFromResourceModel(state)
-	if err != nil {
-		resp.Diagnostics.AddError("unable to read vault", err.Error())
-		return
-	}
-
-	vault, err = r.client.Vaults.Get(vault.Id)
+	vault, err := r.client.Vaults.Get(state.Id.ValueString())
 	if err != nil {
 		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
 			resp.State.RemoveResource(ctx)

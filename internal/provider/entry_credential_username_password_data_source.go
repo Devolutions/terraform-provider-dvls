@@ -139,6 +139,9 @@ func (d *EntryCredentialUsernamePasswordDataSource) Read(ctx context.Context, re
 	var err error
 
 	if !data.Id.IsNull() && !data.Id.IsUnknown() {
+		if !data.Name.IsNull() || !data.Folder.IsNull() {
+			resp.Diagnostics.AddWarning("id takes precedence", "When id is provided, name and folder are ignored.")
+		}
 		entryCredentialUsernamePassword, err = d.client.Entries.Credential.GetById(data.VaultId.ValueString(), data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("unable to read username password credential entry", err.Error())
@@ -149,16 +152,16 @@ func (d *EntryCredentialUsernamePasswordDataSource) Read(ctx context.Context, re
 			return
 		}
 	} else {
-		var path *string
+		var folderPath *string
 		if !data.Folder.IsNull() && !data.Folder.IsUnknown() {
 			v := data.Folder.ValueString()
-			path = &v
+			folderPath = &v
 		}
 		entryCredentialUsernamePassword, err = d.client.Entries.Credential.GetByName(
 			data.VaultId.ValueString(),
 			data.Name.ValueString(),
 			dvls.EntryCredentialSubTypeDefault,
-			dvls.GetByNameOptions{Path: path},
+			dvls.GetByNameOptions{Path: folderPath},
 		)
 		if err != nil {
 			if errors.Is(err, dvls.ErrMultipleEntriesFound) {

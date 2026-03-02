@@ -151,6 +151,9 @@ func (d *EntryCredentialSSHKeyDataSource) Read(ctx context.Context, req datasour
 	var err error
 
 	if !data.Id.IsNull() && !data.Id.IsUnknown() {
+		if !data.Name.IsNull() || !data.Folder.IsNull() {
+			resp.Diagnostics.AddWarning("id takes precedence", "When id is provided, name and folder are ignored.")
+		}
 		entryCredentialSSHKey, err = d.client.Entries.Credential.GetById(data.VaultId.ValueString(), data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("unable to read SSH key credential entry", err.Error())
@@ -161,16 +164,16 @@ func (d *EntryCredentialSSHKeyDataSource) Read(ctx context.Context, req datasour
 			return
 		}
 	} else {
-		var path *string
+		var folderPath *string
 		if !data.Folder.IsNull() && !data.Folder.IsUnknown() {
 			v := data.Folder.ValueString()
-			path = &v
+			folderPath = &v
 		}
 		entryCredentialSSHKey, err = d.client.Entries.Credential.GetByName(
 			data.VaultId.ValueString(),
 			data.Name.ValueString(),
 			dvls.EntryCredentialSubTypePrivateKey,
-			dvls.GetByNameOptions{Path: path},
+			dvls.GetByNameOptions{Path: folderPath},
 		)
 		if err != nil {
 			if errors.Is(err, dvls.ErrMultipleEntriesFound) {

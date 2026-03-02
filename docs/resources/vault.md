@@ -30,10 +30,10 @@ resource "dvls_vault" "example" {
 
 ### Optional
 
-- `content_type` (String) Vault content type. Must be one of: [everything, secrets, credentials, business_information]
+- `content_type` (String) Vault content type. Must be one of: [business_information, credentials, everything, secrets]
 - `description` (String) Vault description
-- `security_level` (String) Vault security level. Must be one of the following: [standard, high]
-- `visibility` (String) Vault visibility. Must be one of the following: [public, private, default]
+- `security_level` (String) Vault security level. Must be one of the following: [high, standard]
+- `visibility` (String) Vault visibility. Must be one of the following: [default, private, public]
 
 ### Read-Only
 
