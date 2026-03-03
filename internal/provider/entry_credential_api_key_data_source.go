@@ -7,6 +7,7 @@ import (
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -71,6 +72,7 @@ func (d *EntryCredentialApiKeyDataSource) Schema(ctx context.Context, req dataso
 				Description: "The folder path to search in. Returns entries in the specified folder and all sub-folders.",
 				Optional:    true,
 				Computed:    true,
+				Validators:  []validator.String{stringvalidator.AlsoRequires(path.MatchRoot("name"))},
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the entry.",

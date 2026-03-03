@@ -2,7 +2,8 @@ package provider
 
 import (
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/Devolutions/go-dvls"
@@ -99,17 +100,7 @@ func lookupMapValue[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.Vaul
 }
 
 func listMapValues[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType](lookup map[K]string) string {
-	values := mapValues(lookup)
-	sort.Strings(values)
+	values := slices.Sorted(maps.Values(lookup))
 
 	return fmt.Sprintf("[%s]", strings.Join(values, ", "))
-}
-
-func mapValues[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType](lookup map[K]string) []string {
-	var values []string
-	for _, v := range lookup {
-		values = append(values, v)
-	}
-
-	return values
 }
