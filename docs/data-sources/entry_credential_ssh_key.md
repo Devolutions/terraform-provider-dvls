@@ -13,9 +13,23 @@ A DVLS SSH Key Credential Entry
 ## Example Usage
 
 ```terraform
-data "dvls_entry_credential_ssh_key" "example" {
-  id       = "00000000-0000-0000-0000-000000000000"
+# Lookup by ID
+data "dvls_entry_credential_ssh_key" "by_id" {
   vault_id = "00000000-0000-0000-0000-000000000000"
+  id       = "00000000-0000-0000-0000-000000000000"
+}
+
+# Lookup by name
+data "dvls_entry_credential_ssh_key" "by_name" {
+  vault_id = "00000000-0000-0000-0000-000000000000"
+  name     = "foo"
+}
+
+# Lookup by name in a specific folder
+data "dvls_entry_credential_ssh_key" "by_name_in_folder" {
+  vault_id = "00000000-0000-0000-0000-000000000000"
+  name     = "foo"
+  folder   = "foo\\bar"
 }
 ```
 
@@ -24,14 +38,17 @@ data "dvls_entry_credential_ssh_key" "example" {
 
 ### Required
 
-- `id` (String) The ID of the entry.
 - `vault_id` (String) The ID of the vault.
+
+### Optional
+
+- `folder` (String) The folder path to search in. Returns entries in the specified folder and all sub-folders.
+- `id` (String) The ID of the entry.
+- `name` (String) The name of the entry.
 
 ### Read-Only
 
 - `description` (String) The description of the entry.
-- `folder` (String) The folder path of the entry.
-- `name` (String) The name of the entry.
 - `passphrase` (String, Sensitive) The entry credential passphrase.
 - `password` (String, Sensitive) The entry credential password.
 - `private_key_data` (String, Sensitive) The entry credential private key data.

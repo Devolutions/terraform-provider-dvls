@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -95,7 +94,7 @@ func (r *EntryCredentialSecretResource) Configure(ctx context.Context, req resou
 
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
+			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *dvls.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
@@ -144,7 +143,7 @@ func (r *EntryCredentialSecretResource) Read(ctx context.Context, req resource.R
 
 	entryCredentialSecret, err := r.client.Entries.Credential.GetById(entryCredentialSecret.VaultId, entryCredentialSecret.Id)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if dvls.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -167,11 +166,13 @@ func (r *EntryCredentialSecretResource) Update(ctx context.Context, req resource
 
 	entryCredentialSecret := newEntryCredentialSecretFromResourceModel(plan)
 
-	_, err := r.client.Entries.Credential.Update(entryCredentialSecret)
+	entryCredentialSecret, err := r.client.Entries.Credential.Update(entryCredentialSecret)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update secret credential entry", err.Error())
 		return
 	}
+
+	setEntryCredentialSecretResourceModel(entryCredentialSecret, plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -188,7 +189,7 @@ func (r *EntryCredentialSecretResource) Delete(ctx context.Context, req resource
 
 	err := r.client.Entries.Credential.Delete(entryCredentialSecret)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if dvls.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}

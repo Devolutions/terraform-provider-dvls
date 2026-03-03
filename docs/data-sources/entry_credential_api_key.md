@@ -13,9 +13,23 @@ A DVLS API Key Credential Entry
 ## Example Usage
 
 ```terraform
-data "dvls_entry_credential_api_key" "example" {
-  id       = "00000000-0000-0000-0000-000000000000"
+# Lookup by ID
+data "dvls_entry_credential_api_key" "by_id" {
   vault_id = "00000000-0000-0000-0000-000000000000"
+  id       = "00000000-0000-0000-0000-000000000000"
+}
+
+# Lookup by name
+data "dvls_entry_credential_api_key" "by_name" {
+  vault_id = "00000000-0000-0000-0000-000000000000"
+  name     = "foo"
+}
+
+# Lookup by name in a specific folder
+data "dvls_entry_credential_api_key" "by_name_in_folder" {
+  vault_id = "00000000-0000-0000-0000-000000000000"
+  name     = "foo"
+  folder   = "foo\\bar"
 }
 ```
 
@@ -24,15 +38,18 @@ data "dvls_entry_credential_api_key" "example" {
 
 ### Required
 
-- `id` (String) The ID of the entry.
 - `vault_id` (String) The ID of the vault.
+
+### Optional
+
+- `folder` (String) The folder path to search in. Returns entries in the specified folder and all sub-folders.
+- `id` (String) The ID of the entry.
+- `name` (String) The name of the entry.
 
 ### Read-Only
 
 - `api_id` (String) The entry credential API ID.
 - `api_key` (String, Sensitive) The entry credential API key.
 - `description` (String) The description of the entry.
-- `folder` (String) The folder path of the entry.
-- `name` (String) The name of the entry.
 - `tags` (List of String) A list of tags added to the entry.
 - `tenant_id` (String) The entry credential tenant ID.

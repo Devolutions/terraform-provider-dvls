@@ -1,8 +1,10 @@
 *.dll
 *.exe
+.claude
 .DS_Store
 example.tf
 test.tf
+tests/
 terraform.tfplan
 terraform.tfstate
 .terraform.lock.hcl

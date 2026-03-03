@@ -2,6 +2,8 @@ package provider
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/Devolutions/go-dvls"
@@ -19,6 +21,13 @@ var vaultVisibilities map[dvls.VaultVisibility]string = map[dvls.VaultVisibility
 	dvls.VaultVisibilityPrivate: "private",
 }
 
+var vaultContentTypes map[dvls.VaultContentType]string = map[dvls.VaultContentType]string{
+	dvls.VaultContentTypeEverything:          "everything",
+	dvls.VaultContentTypeSecrets:             "secrets",
+	dvls.VaultContentTypeCredentials:         "credentials",
+	dvls.VaultContentTypeBusinessInformation: "business_information",
+}
+
 func newVaultFromResourceModel(data *VaultResourceModel) (dvls.Vault, error) {
 	securityLevel, err := lookupMapValue(vaultSecurityLevels, data.SecurityLevel.ValueString())
 	if err != nil {
@@ -30,12 +39,18 @@ func newVaultFromResourceModel(data *VaultResourceModel) (dvls.Vault, error) {
 		return dvls.Vault{}, err
 	}
 
+	contentType, err := lookupMapValue(vaultContentTypes, data.ContentType.ValueString())
+	if err != nil {
+		return dvls.Vault{}, err
+	}
+
 	vault := dvls.Vault{
 		Id:            data.Id.ValueString(),
 		Name:          data.Name.ValueString(),
 		Description:   data.Description.ValueString(),
-		Visibility:    dvls.VaultVisibility(visibility),
-		SecurityLevel: dvls.VaultSecurityLevel(securityLevel),
+		Visibility:    visibility,
+		SecurityLevel: securityLevel,
+		ContentType:   contentType,
 	}
 
 	return vault, nil
@@ -43,11 +58,11 @@ func newVaultFromResourceModel(data *VaultResourceModel) (dvls.Vault, error) {
 
 func setVaultResourceModel(vault dvls.Vault, data *VaultResourceModel) {
 	model := VaultResourceModel{
-		Id:             basetypes.NewStringValue(vault.Id),
-		Name:           basetypes.NewStringValue(vault.Name),
-		Visibility:     basetypes.NewStringValue(vaultVisibilities[vault.Visibility]),
-		SecurityLevel:  basetypes.NewStringValue(vaultSecurityLevels[vault.SecurityLevel]),
-		MasterPassword: data.MasterPassword,
+		Id:            basetypes.NewStringValue(vault.Id),
+		Name:          basetypes.NewStringValue(vault.Name),
+		Visibility:    basetypes.NewStringValue(vaultVisibilities[vault.Visibility]),
+		SecurityLevel: basetypes.NewStringValue(vaultSecurityLevels[vault.SecurityLevel]),
+		ContentType:   basetypes.NewStringValue(vaultContentTypes[vault.ContentType]),
 	}
 
 	if vault.Description != "" {
@@ -63,6 +78,7 @@ func setVaultDataModel(vault dvls.Vault, data *VaultDataSourceModel) {
 		Name:          basetypes.NewStringValue(vault.Name),
 		Visibility:    basetypes.NewStringValue(vaultVisibilities[vault.Visibility]),
 		SecurityLevel: basetypes.NewStringValue(vaultSecurityLevels[vault.SecurityLevel]),
+		ContentType:   basetypes.NewStringValue(vaultContentTypes[vault.ContentType]),
 	}
 
 	if vault.Description != "" {
@@ -72,25 +88,19 @@ func setVaultDataModel(vault dvls.Vault, data *VaultDataSourceModel) {
 	*data = model
 }
 
-func lookupMapValue[K interface {
-	int | dvls.VaultSecurityLevel | dvls.VaultVisibility
-}](lookup map[K]string, value string) (int, error) {
+func lookupMapValue[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType](lookup map[K]string, value string) (K, error) {
 	for k, v := range lookup {
 		if v == value {
-			return int(k), nil
+			return k, nil
 		}
 	}
 
-	return 0, fmt.Errorf("value %s not found in lookup", value)
+	var zero K
+	return zero, fmt.Errorf("value %s not found in lookup", value)
 }
 
-func listMapValues[K interface {
-	int | dvls.VaultSecurityLevel | dvls.VaultVisibility
-}](lookup map[K]string) string {
-	var values []string
-	for _, v := range lookup {
-		values = append(values, v)
-	}
+func listMapValues[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType](lookup map[K]string) string {
+	values := slices.Sorted(maps.Values(lookup))
 
 	return fmt.Sprintf("[%s]", strings.Join(values, ", "))
 }

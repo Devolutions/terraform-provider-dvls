@@ -2,17 +2,22 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &EntryCredentialApiKeyDataSource{}
+var _ datasource.DataSourceWithConfigValidators = &EntryCredentialApiKeyDataSource{}
 
 func NewEntryCredentialApiKeyDataSource() datasource.DataSource {
 	return &EntryCredentialApiKeyDataSource{}
@@ -49,7 +54,8 @@ func (d *EntryCredentialApiKeyDataSource) Schema(ctx context.Context, req dataso
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of the entry.",
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				Validators:  []validator.String{entryIdValidator{}},
 			},
 			"vault_id": schema.StringAttribute{
@@ -59,11 +65,14 @@ func (d *EntryCredentialApiKeyDataSource) Schema(ctx context.Context, req dataso
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the entry.",
+				Optional:    true,
 				Computed:    true,
 			},
 			"folder": schema.StringAttribute{
-				Description: "The folder path of the entry.",
+				Description: "The folder path to search in. Returns entries in the specified folder and all sub-folders.",
+				Optional:    true,
 				Computed:    true,
+				Validators:  []validator.String{stringvalidator.AlsoRequires(path.MatchRoot("name"))},
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the entry.",
@@ -88,6 +97,15 @@ func (d *EntryCredentialApiKeyDataSource) Schema(ctx context.Context, req dataso
 				Computed:    true,
 			},
 		},
+	}
+}
+
+func (d *EntryCredentialApiKeyDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
+	return []datasource.ConfigValidator{
+		datasourcevalidator.ExactlyOneOf(
+			path.MatchRoot("id"),
+			path.MatchRoot("name"),
+		),
 	}
 }
 
@@ -119,19 +137,20 @@ func (d *EntryCredentialApiKeyDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
-	entryCredentialApiKey, err := d.client.Entries.Credential.GetById(data.VaultId.ValueString(), data.Id.ValueString())
+	entry, err := fetchCredentialEntry(d.client, data.VaultId, data.Id, data.Name, data.Folder, dvls.EntryCredentialSubTypeApiKey)
 	if err != nil {
+		if errors.Is(err, dvls.ErrMultipleEntriesFound) {
+			resp.Diagnostics.AddError(
+				"multiple entries found",
+				fmt.Sprintf("more than one entry named %q found, use id to target the correct one", data.Name.ValueString()),
+			)
+			return
+		}
 		resp.Diagnostics.AddError("unable to read api key credential entry", err.Error())
 		return
 	}
 
-	if entryCredentialApiKey.Type != dvls.EntryCredentialType ||
-		entryCredentialApiKey.SubType != dvls.EntryCredentialSubTypeApiKey {
-		resp.Diagnostics.AddError("invalid entry type", "expected an api key credential entry.")
-		return
-	}
-
-	setEntryCredentialApiKeyDataModel(entryCredentialApiKey, data)
+	setEntryCredentialApiKeyDataModel(entry, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

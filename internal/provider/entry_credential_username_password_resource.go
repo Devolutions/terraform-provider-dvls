@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -105,7 +104,7 @@ func (r *EntryCredentialUsernamePasswordResource) Configure(ctx context.Context,
 
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
+			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *dvls.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
@@ -154,7 +153,7 @@ func (r *EntryCredentialUsernamePasswordResource) Read(ctx context.Context, req 
 
 	entryCredentialUsernamePassword, err := r.client.Entries.Credential.GetById(entryCredentialUsernamePassword.VaultId, entryCredentialUsernamePassword.Id)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if dvls.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -177,11 +176,13 @@ func (r *EntryCredentialUsernamePasswordResource) Update(ctx context.Context, re
 
 	entryCredentialUsernamePassword := newEntryCredentialUsernamePasswordFromResourceModel(plan)
 
-	_, err := r.client.Entries.Credential.Update(entryCredentialUsernamePassword)
+	entryCredentialUsernamePassword, err := r.client.Entries.Credential.Update(entryCredentialUsernamePassword)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update username password credential entry", err.Error())
 		return
 	}
+
+	setEntryCredentialUsernamePasswordResourceModel(entryCredentialUsernamePassword, plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -198,7 +199,7 @@ func (r *EntryCredentialUsernamePasswordResource) Delete(ctx context.Context, re
 
 	err := r.client.Entries.Credential.Delete(entryCredentialUsernamePassword)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if dvls.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}

@@ -67,33 +67,33 @@ func setEntryCredentialSecretResourceModel(entry dvls.Entry, rm *EntryCredential
 	*rm = model
 }
 
-func setEntryCredentialSecretDataModel(rm dvls.Entry, dsm *EntryCredentialSecretDataSourceModel) {
+func setEntryCredentialSecretDataModel(entry dvls.Entry, dsm *EntryCredentialSecretDataSourceModel) {
 	var model EntryCredentialSecretDataSourceModel
 
-	model.Id = basetypes.NewStringValue(rm.Id)
-	model.VaultId = basetypes.NewStringValue(rm.VaultId)
-	model.Name = basetypes.NewStringValue(rm.Name)
+	model.Id = basetypes.NewStringValue(entry.Id)
+	model.VaultId = basetypes.NewStringValue(entry.VaultId)
+	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if rm.Path != "" {
-		model.Folder = basetypes.NewStringValue(rm.Path)
+	if entry.Path != "" {
+		model.Folder = basetypes.NewStringValue(entry.Path)
 	}
 
-	if rm.Description != "" {
-		model.Description = basetypes.NewStringValue(rm.Description)
+	if entry.Description != "" {
+		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if rm.Tags != nil {
+	if entry.Tags != nil {
 		var tagsBase []types.String
 
-		for _, v := range rm.Tags {
+		for _, v := range entry.Tags {
 			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
 		}
 
 		model.Tags = tagsBase
 	}
 
-	if rm.Data != nil {
-		data, ok := rm.GetCredentialAccessCodeData()
+	if entry.Data != nil {
+		data, ok := entry.GetCredentialAccessCodeData()
 		if ok {
 			if data.Password != "" {
 				model.Secret = basetypes.NewStringValue(data.Password)
