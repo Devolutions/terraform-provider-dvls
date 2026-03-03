@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -95,7 +94,7 @@ func (r *EntryCredentialConnectionStringResource) Configure(ctx context.Context,
 
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
+			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *dvls.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
@@ -144,7 +143,7 @@ func (r *EntryCredentialConnectionStringResource) Read(ctx context.Context, req 
 
 	entryCredentialConnectionString, err := r.client.Entries.Credential.GetById(entryCredentialConnectionString.VaultId, entryCredentialConnectionString.Id)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if dvls.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -167,11 +166,13 @@ func (r *EntryCredentialConnectionStringResource) Update(ctx context.Context, re
 
 	entryCredentialConnectionString := newEntryCredentialConnectionStringFromResourceModel(plan)
 
-	_, err := r.client.Entries.Credential.Update(entryCredentialConnectionString)
+	entryCredentialConnectionString, err := r.client.Entries.Credential.Update(entryCredentialConnectionString)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update connection string credential entry", err.Error())
 		return
 	}
+
+	setEntryCredentialConnectionStringResourceModel(entryCredentialConnectionString, plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -188,7 +189,7 @@ func (r *EntryCredentialConnectionStringResource) Delete(ctx context.Context, re
 
 	err := r.client.Entries.Credential.Delete(entryCredentialConnectionString)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if dvls.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
