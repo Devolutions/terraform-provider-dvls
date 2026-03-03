@@ -63,25 +63,25 @@ func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Optional:    true,
 			},
 			"visibility": schema.StringAttribute{
-				Description: fmt.Sprintf("Vault visibility. Must be one of the following: %s", listMapValues(vaultVisibilities)),
+				Description: fmt.Sprintf("Vault visibility. Must be one of the following: %s", vaultVisibilityValues),
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("default"),
-				Validators:  []validator.String{vaultVisibilityValidator{}},
+				Validators:  []validator.String{newVaultVisibilityValidator()},
 			},
 			"security_level": schema.StringAttribute{
-				Description: fmt.Sprintf("Vault security level. Must be one of the following: %s", listMapValues(vaultSecurityLevels)),
+				Description: fmt.Sprintf("Vault security level. Must be one of the following: %s", vaultSecurityLevelValues),
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("standard"),
-				Validators:  []validator.String{vaultSecurityLevelValidator{}},
+				Validators:  []validator.String{newVaultSecurityLevelValidator()},
 			},
 			"content_type": schema.StringAttribute{
-				Description: fmt.Sprintf("Vault content type. Must be one of: %s", listMapValues(vaultContentTypes)),
+				Description: fmt.Sprintf("Vault content type. Must be one of: %s", vaultContentTypeValues),
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("everything"),
-				Validators:  []validator.String{vaultContentTypeValidator{}},
+				Validators:  []validator.String{newVaultContentTypeValidator()},
 			},
 		},
 	}
@@ -158,14 +158,8 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 func (r *VaultResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan *VaultResourceModel
-	var state *VaultResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -181,6 +175,8 @@ func (r *VaultResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		resp.Diagnostics.AddError("unable to update vault", err.Error())
 		return
 	}
+
+	setVaultResourceModel(vault, plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }

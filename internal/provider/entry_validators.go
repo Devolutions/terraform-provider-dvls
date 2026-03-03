@@ -11,15 +11,15 @@ import (
 
 type entryIdValidator struct{}
 
-func (validator entryIdValidator) Description(_ context.Context) string {
+func (v entryIdValidator) Description(_ context.Context) string {
 	return "entry must be a valid UUID (ex.: 00000000-0000-0000-0000-000000000000)"
 }
 
-func (validator entryIdValidator) MarkdownDescription(ctx context.Context) string {
-	return validator.Description(ctx)
+func (v entryIdValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
 }
 
-func (d entryIdValidator) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
+func (v entryIdValidator) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
 	if request.ConfigValue.IsNull() || request.ConfigValue.IsUnknown() {
 		return
 	}

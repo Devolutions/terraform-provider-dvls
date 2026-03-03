@@ -4,21 +4,22 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Devolutions/go-dvls"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 type vaultIdValidator struct{}
 
-func (validator vaultIdValidator) Description(_ context.Context) string {
+func (v vaultIdValidator) Description(_ context.Context) string {
 	return "vault must be a valid UUID (ex.: 00000000-0000-0000-0000-000000000000)"
 }
 
-func (validator vaultIdValidator) MarkdownDescription(ctx context.Context) string {
-	return validator.Description(ctx)
+func (v vaultIdValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
 }
 
-func (d vaultIdValidator) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
+func (v vaultIdValidator) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
 	if request.ConfigValue.IsNull() || request.ConfigValue.IsUnknown() {
 		return
 	}
@@ -32,80 +33,52 @@ func (d vaultIdValidator) ValidateString(_ context.Context, request validator.St
 	}
 }
 
-type vaultSecurityLevelValidator struct{}
-
-func (validator vaultSecurityLevelValidator) Description(_ context.Context) string {
-	values := listMapValues(vaultSecurityLevels)
-	return fmt.Sprintf("valid values are: %v", values)
+type vaultEnumValidator[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType] struct {
+	lookup    map[K]string
+	errTitle  string
+	errDetail string
 }
 
-func (validator vaultSecurityLevelValidator) MarkdownDescription(ctx context.Context) string {
-	return validator.Description(ctx)
+func (v vaultEnumValidator[K]) Description(_ context.Context) string {
+	return v.errDetail
 }
 
-func (d vaultSecurityLevelValidator) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
+func (v vaultEnumValidator[K]) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v vaultEnumValidator[K]) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
 	if request.ConfigValue.IsNull() || request.ConfigValue.IsUnknown() {
 		return
 	}
 
-	securityLevel := request.ConfigValue.ValueString()
-
-	_, err := lookupMapValue(vaultSecurityLevels, securityLevel)
+	_, err := lookupMapValue(v.lookup, request.ConfigValue.ValueString())
 	if err != nil {
-		values := listMapValues(vaultSecurityLevels)
-		response.Diagnostics.AddError("vault security level is invalid", fmt.Sprintf("valid values are: %s", values))
+		response.Diagnostics.AddError(v.errTitle, v.errDetail)
 		return
 	}
 }
 
-type vaultVisibilityValidator struct{}
-
-func (validator vaultVisibilityValidator) Description(_ context.Context) string {
-	values := listMapValues(vaultVisibilities)
-	return fmt.Sprintf("valid values are: %v", values)
-}
-
-func (validator vaultVisibilityValidator) MarkdownDescription(ctx context.Context) string {
-	return validator.Description(ctx)
-}
-
-func (d vaultVisibilityValidator) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
-	if request.ConfigValue.IsNull() || request.ConfigValue.IsUnknown() {
-		return
-	}
-
-	visibility := request.ConfigValue.ValueString()
-
-	_, err := lookupMapValue(vaultVisibilities, visibility)
-	if err != nil {
-		values := listMapValues(vaultVisibilities)
-		response.Diagnostics.AddError("vault visibility is invalid", fmt.Sprintf("valid values are: %s", values))
-		return
+func newVaultSecurityLevelValidator() vaultEnumValidator[dvls.VaultSecurityLevel] {
+	return vaultEnumValidator[dvls.VaultSecurityLevel]{
+		lookup:    vaultSecurityLevels,
+		errTitle:  "vault security level is invalid",
+		errDetail: fmt.Sprintf("valid values are: %s", vaultSecurityLevelValues),
 	}
 }
 
-type vaultContentTypeValidator struct{}
-
-func (validator vaultContentTypeValidator) Description(_ context.Context) string {
-	values := listMapValues(vaultContentTypes)
-	return fmt.Sprintf("valid values are: %v", values)
-}
-
-func (validator vaultContentTypeValidator) MarkdownDescription(ctx context.Context) string {
-	return validator.Description(ctx)
-}
-
-func (d vaultContentTypeValidator) ValidateString(_ context.Context, request validator.StringRequest, response *validator.StringResponse) {
-	if request.ConfigValue.IsNull() || request.ConfigValue.IsUnknown() {
-		return
+func newVaultVisibilityValidator() vaultEnumValidator[dvls.VaultVisibility] {
+	return vaultEnumValidator[dvls.VaultVisibility]{
+		lookup:    vaultVisibilities,
+		errTitle:  "vault visibility is invalid",
+		errDetail: fmt.Sprintf("valid values are: %s", vaultVisibilityValues),
 	}
+}
 
-	contentType := request.ConfigValue.ValueString()
-
-	_, err := lookupMapValue(vaultContentTypes, contentType)
-	if err != nil {
-		values := listMapValues(vaultContentTypes)
-		response.Diagnostics.AddError("vault content type is invalid", fmt.Sprintf("valid values are: %s", values))
-		return
+func newVaultContentTypeValidator() vaultEnumValidator[dvls.VaultContentType] {
+	return vaultEnumValidator[dvls.VaultContentType]{
+		lookup:    vaultContentTypes,
+		errTitle:  "vault content type is invalid",
+		errDetail: fmt.Sprintf("valid values are: %s", vaultContentTypeValues),
 	}
 }

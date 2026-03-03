@@ -2,14 +2,11 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
-	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -111,12 +108,7 @@ func (d *EntryCredentialSSHKeyDataSource) Schema(ctx context.Context, req dataso
 }
 
 func (d *EntryCredentialSSHKeyDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
-	return []datasource.ConfigValidator{
-		datasourcevalidator.AtLeastOneOf(
-			path.MatchRoot("id"),
-			path.MatchRoot("name"),
-		),
-	}
+	return idOrNameConfigValidators
 }
 
 func (d *EntryCredentialSSHKeyDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -147,48 +139,16 @@ func (d *EntryCredentialSSHKeyDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
-	var entryCredentialSSHKey dvls.Entry
-	var err error
-
-	if !data.Id.IsNull() && !data.Id.IsUnknown() {
-		if !data.Name.IsNull() || !data.Folder.IsNull() {
-			resp.Diagnostics.AddWarning("id takes precedence", "When id is provided, name and folder are ignored.")
-		}
-		entryCredentialSSHKey, err = d.client.Entries.Credential.GetById(data.VaultId.ValueString(), data.Id.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError("unable to read SSH key credential entry", err.Error())
-			return
-		}
-		if entryCredentialSSHKey.Type != dvls.EntryCredentialType || entryCredentialSSHKey.SubType != dvls.EntryCredentialSubTypePrivateKey {
-			resp.Diagnostics.AddError("invalid entry type", "expected a SSH key credential entry.")
-			return
-		}
-	} else {
-		var folderPath *string
-		if !data.Folder.IsNull() && !data.Folder.IsUnknown() {
-			v := data.Folder.ValueString()
-			folderPath = &v
-		}
-		entryCredentialSSHKey, err = d.client.Entries.Credential.GetByName(
-			data.VaultId.ValueString(),
-			data.Name.ValueString(),
-			dvls.EntryCredentialSubTypePrivateKey,
-			dvls.GetByNameOptions{Path: folderPath},
-		)
-		if err != nil {
-			if errors.Is(err, dvls.ErrMultipleEntriesFound) {
-				resp.Diagnostics.AddError(
-					"multiple entries found",
-					fmt.Sprintf("more than one entry named %q found, use id to target the correct one", data.Name.ValueString()),
-				)
-				return
-			}
-			resp.Diagnostics.AddError("unable to read SSH key credential entry", err.Error())
-			return
-		}
+	entry, ok := getCredentialEntry(
+		d.client, &resp.Diagnostics,
+		data.Id, data.VaultId, data.Name, data.Folder,
+		dvls.EntryCredentialSubTypePrivateKey, "SSH key",
+	)
+	if !ok {
+		return
 	}
 
-	setEntryCredentialSSHKeyDataModel(entryCredentialSSHKey, data)
+	setEntryCredentialSSHKeyDataModel(entry, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

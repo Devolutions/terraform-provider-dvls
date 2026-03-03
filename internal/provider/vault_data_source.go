@@ -6,10 +6,8 @@ import (
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
-	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -78,12 +76,7 @@ func (d *VaultDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 }
 
 func (d *VaultDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
-	return []datasource.ConfigValidator{
-		datasourcevalidator.AtLeastOneOf(
-			path.MatchRoot("id"),
-			path.MatchRoot("name"),
-		),
-	}
+	return idOrNameConfigValidators
 }
 
 func (d *VaultDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

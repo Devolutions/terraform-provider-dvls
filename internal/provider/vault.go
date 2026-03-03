@@ -27,6 +27,12 @@ var vaultContentTypes map[dvls.VaultContentType]string = map[dvls.VaultContentTy
 	dvls.VaultContentTypeBusinessInformation: "business_information",
 }
 
+var (
+	vaultSecurityLevelValues = listMapValues(vaultSecurityLevels)
+	vaultVisibilityValues    = listMapValues(vaultVisibilities)
+	vaultContentTypeValues   = listMapValues(vaultContentTypes)
+)
+
 func newVaultFromResourceModel(data *VaultResourceModel) (dvls.Vault, error) {
 	securityLevel, err := lookupMapValue(vaultSecurityLevels, data.SecurityLevel.ValueString())
 	if err != nil {
