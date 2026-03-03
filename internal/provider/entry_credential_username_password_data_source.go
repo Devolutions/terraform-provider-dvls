@@ -102,7 +102,7 @@ func (d *EntryCredentialUsernamePasswordDataSource) Schema(ctx context.Context, 
 
 func (d *EntryCredentialUsernamePasswordDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
 	return []datasource.ConfigValidator{
-		datasourcevalidator.AtLeastOneOf(
+		datasourcevalidator.ExactlyOneOf(
 			path.MatchRoot("id"),
 			path.MatchRoot("name"),
 		),
@@ -135,12 +135,6 @@ func (d *EntryCredentialUsernamePasswordDataSource) Read(ctx context.Context, re
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	if !data.Id.IsNull() && !data.Id.IsUnknown() {
-		if !data.Name.IsNull() || !data.Folder.IsNull() {
-			resp.Diagnostics.AddWarning("id takes precedence", "When id is provided, name and folder are ignored.")
-		}
 	}
 
 	entry, err := fetchCredentialEntry(d.client, data.VaultId, data.Id, data.Name, data.Folder, dvls.EntryCredentialSubTypeDefault)

@@ -79,7 +79,7 @@ func (d *VaultDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 
 func (d *VaultDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
 	return []datasource.ConfigValidator{
-		datasourcevalidator.AtLeastOneOf(
+		datasourcevalidator.ExactlyOneOf(
 			path.MatchRoot("id"),
 			path.MatchRoot("name"),
 		),
@@ -118,9 +118,6 @@ func (d *VaultDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	var err error
 
 	if !data.Id.IsNull() && !data.Id.IsUnknown() {
-		if !data.Name.IsNull() {
-			resp.Diagnostics.AddWarning("id takes precedence", "When id is provided, name is ignored.")
-		}
 		vault, err = d.client.Vaults.Get(data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("unable to read vault", err.Error())
