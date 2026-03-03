@@ -147,48 +147,23 @@ func (d *EntryCredentialSSHKeyDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
-	var entryCredentialSSHKey dvls.Entry
-	var err error
-
 	if !data.Id.IsNull() && !data.Id.IsUnknown() {
 		if !data.Name.IsNull() || !data.Folder.IsNull() {
 			resp.Diagnostics.AddWarning("id takes precedence", "When id is provided, name and folder are ignored.")
 		}
-		entryCredentialSSHKey, err = d.client.Entries.Credential.GetById(data.VaultId.ValueString(), data.Id.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError("unable to read SSH key credential entry", err.Error())
-			return
-		}
-		if entryCredentialSSHKey.Type != dvls.EntryCredentialType || entryCredentialSSHKey.SubType != dvls.EntryCredentialSubTypePrivateKey {
-			resp.Diagnostics.AddError("invalid entry type", "expected a SSH key credential entry.")
-			return
-		}
-	} else {
-		var folderPath *string
-		if !data.Folder.IsNull() && !data.Folder.IsUnknown() {
-			v := data.Folder.ValueString()
-			folderPath = &v
-		}
-		entryCredentialSSHKey, err = d.client.Entries.Credential.GetByName(
-			data.VaultId.ValueString(),
-			data.Name.ValueString(),
-			dvls.EntryCredentialSubTypePrivateKey,
-			dvls.GetByNameOptions{Path: folderPath},
-		)
-		if err != nil {
-			if errors.Is(err, dvls.ErrMultipleEntriesFound) {
-				resp.Diagnostics.AddError(
-					"multiple entries found",
-					fmt.Sprintf("more than one entry named %q found, use id to target the correct one", data.Name.ValueString()),
-				)
-				return
-			}
-			resp.Diagnostics.AddError("unable to read SSH key credential entry", err.Error())
-			return
-		}
 	}
 
-	setEntryCredentialSSHKeyDataModel(entryCredentialSSHKey, data)
+	entry, err := fetchCredentialEntry(d.client, data.VaultId, data.Id, data.Name, data.Folder, dvls.EntryCredentialSubTypePrivateKey)
+	if err != nil {
+		if errors.Is(err, dvls.ErrMultipleEntriesFound) {
+			resp.Diagnostics.AddError("multiple entries found", fmt.Sprintf("more than one entry named %q found, use id to target the correct one", data.Name.ValueString()))
+			return
+		}
+		resp.Diagnostics.AddError("unable to read SSH key credential entry", err.Error())
+		return
+	}
+
+	setEntryCredentialSSHKeyDataModel(entry, data)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
