@@ -99,12 +99,17 @@ func lookupMapValue[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.Vaul
 }
 
 func listMapValues[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType](lookup map[K]string) string {
+	values := mapValues(lookup)
+	sort.Strings(values)
+
+	return fmt.Sprintf("[%s]", strings.Join(values, ", "))
+}
+
+func mapValues[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType](lookup map[K]string) []string {
 	var values []string
 	for _, v := range lookup {
 		values = append(values, v)
 	}
 
-	sort.Strings(values)
-
-	return fmt.Sprintf("[%s]", strings.Join(values, ", "))
+	return values
 }

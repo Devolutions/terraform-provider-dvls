@@ -1,5 +1,6 @@
 *.dll
 *.exe
+.claude
 .DS_Store
 example.tf
 test.tf

@@ -3,10 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Devolutions/go-dvls"
-	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -67,21 +66,21 @@ func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("default"),
-				Validators:  []validator.String{vaultVisibilityValidator{}},
+				Validators:  []validator.String{stringvalidator.OneOf(mapValues(vaultVisibilities)...)},
 			},
 			"security_level": schema.StringAttribute{
 				Description: fmt.Sprintf("Vault security level. Must be one of the following: %s", listMapValues(vaultSecurityLevels)),
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("standard"),
-				Validators:  []validator.String{vaultSecurityLevelValidator{}},
+				Validators:  []validator.String{stringvalidator.OneOf(mapValues(vaultSecurityLevels)...)},
 			},
 			"content_type": schema.StringAttribute{
 				Description: fmt.Sprintf("Vault content type. Must be one of: %s", listMapValues(vaultContentTypes)),
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("everything"),
-				Validators:  []validator.String{vaultContentTypeValidator{}},
+				Validators:  []validator.String{stringvalidator.OneOf(mapValues(vaultContentTypes)...)},
 			},
 		},
 	}
@@ -115,20 +114,19 @@ func (r *VaultResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	vault, err := newVaultFromResourceModel(plan)
+	requestVault, err := newVaultFromResourceModel(plan)
+	if err != nil {
+		resp.Diagnostics.AddError("unable to build vault from plan", err.Error())
+		return
+	}
+
+	createdVault, err := r.client.Vaults.New(requestVault)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to create vault", err.Error())
 		return
 	}
-	vault.Id = uuid.NewString()
 
-	vault, err = r.client.Vaults.New(vault)
-	if err != nil {
-		resp.Diagnostics.AddError("unable to create vault", err.Error())
-		return
-	}
-
-	setVaultResourceModel(vault, plan)
+	setVaultResourceModel(createdVault, plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -143,7 +141,7 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	vault, err := r.client.Vaults.Get(state.Id.ValueString())
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if dvls.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -158,29 +156,25 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 func (r *VaultResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan *VaultResourceModel
-	var state *VaultResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
+	requestVault, err := newVaultFromResourceModel(plan)
+	if err != nil {
+		resp.Diagnostics.AddError("unable to build vault from plan", err.Error())
 		return
 	}
 
-	vault, err := newVaultFromResourceModel(plan)
+	updatedVault, err := r.client.Vaults.Update(requestVault)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update vault", err.Error())
 		return
 	}
 
-	vault, err = r.client.Vaults.Update(vault)
-	if err != nil {
-		resp.Diagnostics.AddError("unable to update vault", err.Error())
-		return
-	}
+	setVaultResourceModel(updatedVault, plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -195,7 +189,7 @@ func (r *VaultResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 	err := r.client.Vaults.Delete(state.Id.ValueString())
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if dvls.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
