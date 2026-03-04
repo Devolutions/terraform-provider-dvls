@@ -1,4 +1,4 @@
-name: test
+name: Test
 run-name: "Acceptance Test — ${{ github.ref_name }}"
 
 on:
@@ -28,7 +28,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9.2.0
 
   acceptance-test:
     needs: lint
