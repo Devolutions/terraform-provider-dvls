@@ -9,12 +9,37 @@ import (
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/echoprovider"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
 
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
 	"dvls": providerserver.NewProtocol6WithError(New("test")()),
+}
+
+// echoprovider surfaces ephemeral values into a managed resource so they can be asserted.
+var testAccProtoV6ProviderFactoriesWithEcho = map[string]func() (tfprotov6.ProviderServer, error){
+	"dvls": providerserver.NewProtocol6WithError(New("test")()),
+	"echo": echoprovider.NewProviderServer(),
+}
+
+var testAccEphemeralTerraformVersionCheck = []tfversion.TerraformVersionCheck{
+	tfversion.SkipBelow(tfversion.Version1_10_0),
+}
+
+// testAccEphemeralEchoConfig wires the echo provider/resource around a
+// reference expression (e.g. "ephemeral.dvls_entry_credential_secret.test")
+// so its attributes can be asserted via "echo.test.data.<field>".
+func testAccEphemeralEchoConfig(refExpr string) string {
+	return fmt.Sprintf(`
+provider "echo" {
+  data = %s
+}
+
+resource "echo" "test" {}
+`, refExpr)
 }
 
 var (
