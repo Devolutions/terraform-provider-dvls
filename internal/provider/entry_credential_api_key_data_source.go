@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
@@ -139,14 +138,7 @@ func (d *EntryCredentialApiKeyDataSource) Read(ctx context.Context, req datasour
 
 	entry, err := fetchCredentialEntry(d.client, data.VaultId, data.Id, data.Name, data.Folder, dvls.EntryCredentialSubTypeApiKey)
 	if err != nil {
-		if errors.Is(err, dvls.ErrMultipleEntriesFound) {
-			resp.Diagnostics.AddError(
-				"multiple entries found",
-				fmt.Sprintf("more than one entry named %q found, use id to target the correct one", data.Name.ValueString()),
-			)
-			return
-		}
-		resp.Diagnostics.AddError("unable to read api key credential entry", err.Error())
+		appendCredentialFetchError(&resp.Diagnostics, err, data.Name, dvls.EntryCredentialSubTypeApiKey)
 		return
 	}
 

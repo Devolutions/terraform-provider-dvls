@@ -12,7 +12,7 @@ Terraform Provider for managing your Devolutions Server instance.
 
 ## Requirements
 
-- [Terraform](https://www.terraform.io/downloads.html) >= 1.0
+- [Terraform](https://www.terraform.io/downloads.html) >= 1.0 (>= 1.10 required to use ephemeral resources)
 - [Go](https://golang.org/doc/install) >= 1.26
 - [Devolutions Server](https://devolutions.net/server) >= 2026.x
 

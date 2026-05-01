@@ -1,9 +1,11 @@
 package provider
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -27,4 +29,29 @@ func fetchCredentialEntry(client *dvls.Client, vaultId, id, name, folder types.S
 	}
 
 	return client.Entries.Credential.GetByName(vaultId.ValueString(), name.ValueString(), subType, dvls.GetByNameOptions{Path: folderPath})
+}
+
+// credentialSubTypeLabels maps subtype constants to human-readable error labels.
+var credentialSubTypeLabels = map[string]string{
+	dvls.EntryCredentialSubTypeAccessCode:            "secret",
+	dvls.EntryCredentialSubTypeApiKey:                "api key",
+	dvls.EntryCredentialSubTypeAzureServicePrincipal: "azure service principal",
+	dvls.EntryCredentialSubTypeConnectionString:      "connection string",
+	dvls.EntryCredentialSubTypeDefault:               "username password",
+	dvls.EntryCredentialSubTypePrivateKey:            "ssh key",
+}
+
+func appendCredentialFetchError(diags *diag.Diagnostics, err error, name types.String, subType string) {
+	if errors.Is(err, dvls.ErrMultipleEntriesFound) {
+		diags.AddError(
+			"multiple entries found",
+			fmt.Sprintf("more than one entry named %q found, use id to target the correct one", name.ValueString()),
+		)
+		return
+	}
+	label, ok := credentialSubTypeLabels[subType]
+	if !ok {
+		label = "credential"
+	}
+	diags.AddError("unable to read "+label+" credential entry", err.Error())
 }

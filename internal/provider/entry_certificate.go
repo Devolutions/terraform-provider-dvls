@@ -3,7 +3,9 @@ package provider
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Devolutions/go-dvls"
@@ -12,6 +14,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// errCertificateNotFound is returned when the DVLS API reports the certificate does not exist.
+var errCertificateNotFound = errors.New("certificate entry not found")
+
+// fetchCertificateEntry retrieves a certificate entry's metadata, password, and file content.
+func fetchCertificateEntry(client *dvls.Client, id string) (dvls.EntryCertificate, []byte, error) {
+	entry, err := client.Entries.Certificate.Get(id)
+	if err != nil {
+		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+			return entry, nil, errCertificateNotFound
+		}
+		return entry, nil, err
+	}
+
+	entry, err = client.Entries.Certificate.GetPassword(entry)
+	if err != nil {
+		return entry, nil, fmt.Errorf("read sensitive information: %w", err)
+	}
+
+	content, err := client.Entries.Certificate.GetFileContent(entry.Id)
+	if err != nil {
+		return entry, nil, fmt.Errorf("read certificate content: %w", err)
+	}
+
+	return entry, content, nil
+}
 
 func newEntryCertificateFromResourceModel(plans *EntryCertificateResourceModelData) dvls.EntryCertificate {
 	var tags []string

@@ -44,6 +44,11 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
       - name: Run acceptance tests
         run: go test ./internal/provider/ -v -timeout 120m
         env:
