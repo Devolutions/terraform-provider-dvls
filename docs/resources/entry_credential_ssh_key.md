@@ -44,7 +44,7 @@ resource "dvls_entry_credential_ssh_key" "example" {
 - `password` (String, Sensitive) The entry credential password.
 - `private_key_data` (String, Sensitive) The entry credential private key.
 - `public_key` (String) The entry credential public key.
-- `tags` (List of String) A list of tags to add to the entry.
+- `tags` (Set of String) A list of tags to add to the entry.
 - `username` (String) The entry credential username.
 
 ### Read-Only

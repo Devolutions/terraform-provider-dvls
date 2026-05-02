@@ -25,12 +25,12 @@ type EntryWebsiteDataSource struct {
 
 // EntryWebsiteDataSourceModel describes the resource data model.
 type EntryWebsiteDataSourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	Url                   types.String `tfsdk:"url"`
@@ -69,7 +69,7 @@ func (d *EntryWebsiteDataSource) Schema(ctx context.Context, req datasource.Sche
 				Description: "Website description",
 				Computed:    true,
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				ElementType: types.StringType,
 				Description: "Website tags",
 				Computed:    true,
@@ -147,11 +147,7 @@ func (d *EntryWebsiteDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.Name = types.StringValue(entryWebsite.EntryName)
 	data.Folder = types.StringValue(entryWebsite.EntryFolderPath)
 	data.Description = types.StringValue(entryWebsite.Description)
-	tags := make([]types.String, len(entryWebsite.Tags))
-	for i, tag := range entryWebsite.Tags {
-		tags[i] = types.StringValue(tag)
-	}
-	data.Tags = tags
+	data.Tags = tagsSliceToSet(entryWebsite.Tags)
 
 	data.Url = types.StringValue(entryWebsiteSensitiveData.WebsiteDetails.URL)
 	data.WebBrowserApplication = types.Int64Value(int64(entryWebsiteSensitiveData.WebsiteDetails.WebBrowserApplication))

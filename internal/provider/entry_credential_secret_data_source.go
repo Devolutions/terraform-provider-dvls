@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Devolutions/go-dvls"
@@ -30,12 +29,12 @@ type EntryCredentialSecretDataSource struct {
 
 // EntryCredentialSecretDataSourceModel describes the data source data model.
 type EntryCredentialSecretDataSourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	Secret types.String `tfsdk:"secret"`
@@ -76,7 +75,7 @@ func (d *EntryCredentialSecretDataSource) Schema(ctx context.Context, req dataso
 				Description: "The description of the entry.",
 				Computed:    true,
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				ElementType: types.StringType,
 				Description: "A list of tags added to the entry.",
 				Computed:    true,
@@ -129,14 +128,7 @@ func (d *EntryCredentialSecretDataSource) Read(ctx context.Context, req datasour
 
 	entry, err := fetchCredentialEntry(d.client, data.VaultId, data.Id, data.Name, data.Folder, dvls.EntryCredentialSubTypeAccessCode)
 	if err != nil {
-		if errors.Is(err, dvls.ErrMultipleEntriesFound) {
-			resp.Diagnostics.AddError(
-				"multiple entries found",
-				fmt.Sprintf("more than one entry named %q found, use id to target the correct one", data.Name.ValueString()),
-			)
-			return
-		}
-		resp.Diagnostics.AddError("unable to read secret credential entry", err.Error())
+		appendCredentialFetchError(&resp.Diagnostics, err, data.Name, dvls.EntryCredentialSubTypeAccessCode)
 		return
 	}
 

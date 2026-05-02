@@ -25,12 +25,12 @@ type EntryHostDataSource struct {
 
 // EntryHostDataSourceModel describes the resource data model.
 type EntryHostDataSourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	Host     types.String `tfsdk:"host"`
@@ -68,7 +68,7 @@ func (d *EntryHostDataSource) Schema(ctx context.Context, req datasource.SchemaR
 				Description: "Host description",
 				Computed:    true,
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				ElementType: types.StringType,
 				Description: "Host tags",
 				Computed:    true,
@@ -142,11 +142,7 @@ func (d *EntryHostDataSource) Read(ctx context.Context, req datasource.ReadReque
 	data.Name = types.StringValue(entryHost.EntryName)
 	data.Folder = types.StringValue(entryHost.EntryFolderPath)
 	data.Description = types.StringValue(entryHost.Description)
-	tags := make([]types.String, len(entryHost.Tags))
-	for i, tag := range entryHost.Tags {
-		tags[i] = types.StringValue(tag)
-	}
-	data.Tags = tags
+	data.Tags = tagsSliceToSet(entryHost.Tags)
 
 	data.Host = types.StringValue(entryHostSensitiveData.HostDetails.Host)
 	data.Username = types.StringValue(entryHostSensitiveData.HostDetails.Username)

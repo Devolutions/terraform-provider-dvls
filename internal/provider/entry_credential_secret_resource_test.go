@@ -26,8 +26,8 @@ func TestAccEntryCredentialSecretResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "description", "test description"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "tags.#", "2"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "tags.1", "acceptance"),
+					resource.TestCheckTypeSetElemAttr("dvls_entry_credential_secret.test", "tags.*", "acceptance"),
+					resource.TestCheckTypeSetElemAttr("dvls_entry_credential_secret.test", "tags.*", "tf-test"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "secret", "my-secret-value-123"),
 				),
 			},
@@ -47,7 +47,7 @@ func TestAccEntryCredentialSecretResource_basic(t *testing.T) {
 			{
 				ResourceName:      "dvls_entry_credential_secret.test",
 				ImportState:       true,
-				ImportStateIdFunc: testAccEntryCredentialImportStateIdFunc("dvls_entry_credential_secret.test"),
+				ImportStateIdFunc: testAccEntryImportStateIdFunc("dvls_entry_credential_secret.test"),
 				ImportStateVerify: true,
 			},
 		},
@@ -62,13 +62,25 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
+resource "dvls_entry_folder" "updated" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder_updated"
+}
+
 resource "dvls_entry_credential_secret" "test" {
   vault_id    = dvls_vault.test.id
   name        = %[3]q
   description = %[4]q
   folder      = %[5]q
-  tags        = ["tf-test", "acceptance"]
+  tags        = ["acceptance", "tf-test"]
   secret      = %[6]q
+
+  depends_on = [dvls_entry_folder.default, dvls_entry_folder.updated]
 }
 `, testAccProviderConfig(), vaultName, name, description, folder, secret)
 }

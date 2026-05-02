@@ -63,15 +63,22 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_api_key" "test" {
   vault_id    = dvls_vault.test.id
   name        = %[3]q
   description = "test entry for data source"
   folder      = "tf_test_folder"
-  tags        = ["tf-test", "acceptance"]
+  tags        = ["acceptance", "tf-test"]
   api_id      = "test-api-id"
   api_key     = "test-api-key-secret"
   tenant_id   = "test-tenant-id"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_api_key" "test" {
@@ -89,15 +96,22 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_api_key" "test" {
   vault_id    = dvls_vault.test.id
   name        = %[3]q
   description = "test entry for data source"
   folder      = "tf_test_folder"
-  tags        = ["tf-test", "acceptance"]
+  tags        = ["acceptance", "tf-test"]
   api_id      = "test-api-id"
   api_key     = "test-api-key-secret"
   tenant_id   = "test-tenant-id"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_api_key" "test" {

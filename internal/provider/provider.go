@@ -6,6 +6,7 @@ import (
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -14,6 +15,7 @@ import (
 
 // Ensure DvlsProvider satisfies various provider interfaces.
 var _ provider.Provider = &DvlsProvider{}
+var _ provider.ProviderWithEphemeralResources = &DvlsProvider{}
 
 // DvlsProvider defines the provider implementation.
 type DvlsProvider struct {
@@ -90,6 +92,7 @@ func (p *DvlsProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	resp.DataSourceData = &dvlsClient
 	resp.ResourceData = &dvlsClient
+	resp.EphemeralResourceData = &dvlsClient
 }
 
 func (p *DvlsProvider) Resources(ctx context.Context) []func() resource.Resource {
@@ -101,6 +104,7 @@ func (p *DvlsProvider) Resources(ctx context.Context) []func() resource.Resource
 		NewEntryCredentialSecretResource,
 		NewEntryCredentialSSHKeyResource,
 		NewEntryCredentialUsernamePasswordResource,
+		NewEntryFolderResource,
 		NewVaultResource,
 	}
 }
@@ -117,6 +121,18 @@ func (p *DvlsProvider) DataSources(ctx context.Context) []func() datasource.Data
 		NewEntryHostDataSource,
 		NewEntryWebsiteDataSource,
 		NewVaultDataSource,
+	}
+}
+
+func (p *DvlsProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
+	return []func() ephemeral.EphemeralResource{
+		NewEntryCertificateEphemeralResource,
+		NewEntryCredentialApiKeyEphemeralResource,
+		NewEntryCredentialAzureServicePrincipalEphemeralResource,
+		NewEntryCredentialConnectionStringEphemeralResource,
+		NewEntryCredentialSecretEphemeralResource,
+		NewEntryCredentialSSHKeyEphemeralResource,
+		NewEntryCredentialUsernamePasswordEphemeralResource,
 	}
 }
 

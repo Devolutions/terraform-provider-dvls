@@ -26,8 +26,8 @@ func TestAccEntryCredentialApiKeyResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "description", "test description"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tags.#", "2"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tags.1", "acceptance"),
+					resource.TestCheckTypeSetElemAttr("dvls_entry_credential_api_key.test", "tags.*", "acceptance"),
+					resource.TestCheckTypeSetElemAttr("dvls_entry_credential_api_key.test", "tags.*", "tf-test"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "api_id", "test-api-id"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "api_key", "test-api-key-secret"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tenant_id", "test-tenant-id"),
@@ -51,7 +51,7 @@ func TestAccEntryCredentialApiKeyResource_basic(t *testing.T) {
 			{
 				ResourceName:      "dvls_entry_credential_api_key.test",
 				ImportState:       true,
-				ImportStateIdFunc: testAccEntryCredentialImportStateIdFunc("dvls_entry_credential_api_key.test"),
+				ImportStateIdFunc: testAccEntryImportStateIdFunc("dvls_entry_credential_api_key.test"),
 				ImportStateVerify: true,
 			},
 		},
@@ -66,15 +66,27 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
+resource "dvls_entry_folder" "updated" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder_updated"
+}
+
 resource "dvls_entry_credential_api_key" "test" {
   vault_id    = dvls_vault.test.id
   name        = %[3]q
   description = %[4]q
   folder      = %[5]q
-  tags        = ["tf-test", "acceptance"]
+  tags        = ["acceptance", "tf-test"]
   api_id      = %[6]q
   api_key     = %[7]q
   tenant_id   = %[8]q
+
+  depends_on = [dvls_entry_folder.default, dvls_entry_folder.updated]
 }
 `, testAccProviderConfig(), vaultName, name, description, folder, apiId, apiKey, tenantId)
 }

@@ -40,7 +40,7 @@ resource "dvls_entry_credential_username_password" "example" {
 - `domain` (String) The entry credential domain.
 - `folder` (String) The folder path where the entry is created.
 - `password` (String, Sensitive) The entry credential password.
-- `tags` (List of String) A list of tags to add to the entry.
+- `tags` (Set of String) A list of tags to add to the entry.
 - `username` (String) The entry credential username.
 
 ### Read-Only

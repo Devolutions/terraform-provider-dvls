@@ -3,42 +3,57 @@ package provider
 import (
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/echoprovider"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
 
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
 	"dvls": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-var (
-	testAccClient     *dvls.Client
-	testAccClientOnce sync.Once
-	testAccClientErr  error
-)
+// echoprovider surfaces ephemeral values into a managed resource so they can be asserted.
+var testAccProtoV6ProviderFactoriesWithEcho = map[string]func() (tfprotov6.ProviderServer, error){
+	"dvls": providerserver.NewProtocol6WithError(New("test")()),
+	"echo": echoprovider.NewProviderServer(),
+}
 
+var testAccEphemeralTerraformVersionCheck = []tfversion.TerraformVersionCheck{
+	tfversion.SkipBelow(tfversion.Version1_10_0),
+}
+
+// testAccEphemeralEchoConfig wires the echo provider/resource around a
+// reference expression (e.g. "ephemeral.dvls_entry_credential_secret.test")
+// so its attributes can be asserted via "echo.test.data.<field>".
+func testAccEphemeralEchoConfig(refExpr string) string {
+	return fmt.Sprintf(`
+provider "echo" {
+  data = %s
+}
+
+resource "echo" "test" {}
+`, refExpr)
+}
+
+// getTestAccClient returns a freshly authenticated DVLS client. It does not
+// cache the client because tokens are short-lived: a long test run can outlive
+// the session, and a stale client surfaces as 401s in CheckDestroy callbacks.
 func getTestAccClient() (*dvls.Client, error) {
-	testAccClientOnce.Do(func() {
-		client, err := dvls.NewClient(
-			os.Getenv("TEST_DVLS_APP_ID"),
-			os.Getenv("TEST_DVLS_APP_SECRET"),
-			os.Getenv("TEST_DVLS_BASE_URI"),
-		)
-		if err != nil {
-			testAccClientErr = fmt.Errorf("unable to create test client: %s", err)
-			return
-		}
-
-		testAccClient = &client
-	})
-
-	return testAccClient, testAccClientErr
+	client, err := dvls.NewClient(
+		os.Getenv("TEST_DVLS_APP_ID"),
+		os.Getenv("TEST_DVLS_APP_SECRET"),
+		os.Getenv("TEST_DVLS_BASE_URI"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create test client: %s", err)
+	}
+	return &client, nil
 }
 
 func testAccPreCheck(t *testing.T) {
@@ -64,7 +79,7 @@ provider "dvls" {
 `, os.Getenv("TEST_DVLS_BASE_URI"))
 }
 
-func testAccEntryCredentialImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
+func testAccEntryImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {

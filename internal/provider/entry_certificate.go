@@ -3,7 +3,9 @@ package provider
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Devolutions/go-dvls"
@@ -13,12 +15,34 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func newEntryCertificateFromResourceModel(plans *EntryCertificateResourceModelData) dvls.EntryCertificate {
-	var tags []string
+// errCertificateNotFound is returned when the DVLS API reports the certificate does not exist.
+var errCertificateNotFound = errors.New("certificate entry not found")
 
-	for _, v := range plans.Data.Tags {
-		tags = append(tags, v.ValueString())
+// fetchCertificateEntry retrieves a certificate entry's metadata, password, and file content.
+func fetchCertificateEntry(client *dvls.Client, id string) (dvls.EntryCertificate, []byte, error) {
+	entry, err := client.Entries.Certificate.Get(id)
+	if err != nil {
+		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+			return entry, nil, errCertificateNotFound
+		}
+		return entry, nil, err
 	}
+
+	entry, err = client.Entries.Certificate.GetPassword(entry)
+	if err != nil {
+		return entry, nil, fmt.Errorf("read sensitive information: %w", err)
+	}
+
+	content, err := client.Entries.Certificate.GetFileContent(entry.Id)
+	if err != nil {
+		return entry, nil, fmt.Errorf("read certificate content: %w", err)
+	}
+
+	return entry, content, nil
+}
+
+func newEntryCertificateFromResourceModel(plans *EntryCertificateResourceModelData) dvls.EntryCertificate {
+	tags := tagsSetToSlice(plans.Data.Tags)
 
 	expiration, _ := plans.Data.Expiration.ValueRFC3339Time()
 
@@ -68,15 +92,7 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 		model.Description = basetypes.NewStringValue(entrycertificate.Description)
 	}
 
-	if entrycertificate.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entrycertificate.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
-	}
+	model.Tags = tagsSliceToSet(entrycertificate.Tags)
 
 	if entrycertificate.Password != "" {
 		model.Password = basetypes.NewStringValue(entrycertificate.Password)
@@ -143,15 +159,7 @@ func setEntryCertificateDataModel(ctx context.Context, entrycertificate dvls.Ent
 		model.Description = basetypes.NewStringValue(entrycertificate.Description)
 	}
 
-	if entrycertificate.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entrycertificate.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
-	}
+	model.Tags = tagsSliceToSet(entrycertificate.Tags)
 
 	if entrycertificate.Password != "" {
 		model.Password = basetypes.NewStringValue(entrycertificate.Password)

@@ -33,7 +33,7 @@ data "dvls_entry_certificate" "example" {
 - `folder` (String) Certificate folder path
 - `name` (String) Certificate name
 - `password` (String, Sensitive) Certificate password
-- `tags` (List of String) Certificate tags
+- `tags` (Set of String) Certificate tags
 - `url` (Attributes) Certificate url. Either file or url must be specified. (see [below for nested schema](#nestedatt--url))
 - `vault_id` (String) Vault ID
 

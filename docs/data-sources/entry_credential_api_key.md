@@ -51,5 +51,5 @@ data "dvls_entry_credential_api_key" "by_name_in_folder" {
 - `api_id` (String) The entry credential API ID.
 - `api_key` (String, Sensitive) The entry credential API key.
 - `description` (String) The description of the entry.
-- `tags` (List of String) A list of tags added to the entry.
+- `tags` (Set of String) A list of tags added to the entry.
 - `tenant_id` (String) The entry credential tenant ID.

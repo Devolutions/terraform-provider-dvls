@@ -2,16 +2,11 @@ package provider
 
 import (
 	"github.com/Devolutions/go-dvls"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func newEntryCredentialSSHKeyFromResourceModel(rm *EntryCredentialSSHKeyResourceModel) dvls.Entry {
-	var tags []string
-
-	for _, v := range rm.Tags {
-		tags = append(tags, v.ValueString())
-	}
+	tags := tagsSetToSlice(rm.Tags)
 
 	entryCredentialSSHKey := dvls.Entry{
 		Id:          rm.Id.ValueString(),
@@ -49,15 +44,7 @@ func setEntryCredentialSSHKeyResourceModel(entry dvls.Entry, rm *EntryCredential
 		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entry.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entry.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
-	}
+	model.Tags = tagsSliceToSet(entry.Tags)
 
 	if entry.Data != nil {
 		data, ok := entry.GetCredentialPrivateKeyData()
@@ -102,15 +89,7 @@ func setEntryCredentialSSHKeyDataModel(entry dvls.Entry, dsm *EntryCredentialSSH
 		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entry.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entry.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
-	}
+	model.Tags = tagsSliceToSet(entry.Tags)
 
 	if entry.Data != nil {
 		data, ok := entry.GetCredentialPrivateKeyData()

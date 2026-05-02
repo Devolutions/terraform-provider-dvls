@@ -61,7 +61,7 @@ resource "dvls_entry_certificate" "file" {
 - `file` (Attributes, Sensitive) Certificate file. Either file or url must be specified. (see [below for nested schema](#nestedatt--file))
 - `folder` (String) Certificate folder path
 - `password` (String, Sensitive) Certificate password
-- `tags` (List of String) Certificate tags
+- `tags` (Set of String) Certificate tags
 - `url` (Attributes) Certificate url. Either file or url must be specified. (see [below for nested schema](#nestedatt--url))
 
 ### Read-Only

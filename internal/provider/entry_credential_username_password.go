@@ -2,16 +2,11 @@ package provider
 
 import (
 	"github.com/Devolutions/go-dvls"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func newEntryCredentialUsernamePasswordFromResourceModel(rm *EntryCredentialUsernamePasswordResourceModel) dvls.Entry {
-	var tags []string
-
-	for _, v := range rm.Tags {
-		tags = append(tags, v.ValueString())
-	}
+	tags := tagsSetToSlice(rm.Tags)
 
 	entryCredentialUsernamePassword := dvls.Entry{
 		Id:          rm.Id.ValueString(),
@@ -47,15 +42,7 @@ func setEntryCredentialUsernamePasswordResourceModel(entry dvls.Entry, rm *Entry
 		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entry.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entry.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
-	}
+	model.Tags = tagsSliceToSet(entry.Tags)
 
 	if entry.Data != nil {
 		data, ok := entry.GetCredentialDefaultData()
@@ -92,15 +79,7 @@ func setEntryCredentialUsernamePasswordDataModel(entry dvls.Entry, dsm *EntryCre
 		model.Description = basetypes.NewStringValue(entry.Description)
 	}
 
-	if entry.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entry.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
-	}
+	model.Tags = tagsSliceToSet(entry.Tags)
 
 	if entry.Data != nil {
 		data, ok := entry.GetCredentialDefaultData()

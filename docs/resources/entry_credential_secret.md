@@ -37,7 +37,7 @@ resource "dvls_entry_credential_secret" "example" {
 - `description` (String) The description of the entry.
 - `folder` (String) The folder path where the entry is created.
 - `secret` (String, Sensitive) The entry credential secret.
-- `tags` (List of String) A list of tags to add to the entry.
+- `tags` (Set of String) A list of tags to add to the entry.
 
 ### Read-Only
 

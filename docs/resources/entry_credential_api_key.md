@@ -40,7 +40,7 @@ resource "dvls_entry_credential_api_key" "example" {
 - `api_key` (String, Sensitive) The entry credential API key.
 - `description` (String) The description of the entry.
 - `folder` (String) The folder path where the entry is created.
-- `tags` (List of String) A list of tags to add to the entry.
+- `tags` (Set of String) A list of tags to add to the entry.
 - `tenant_id` (String) The entry credential tenant ID.
 
 ### Read-Only

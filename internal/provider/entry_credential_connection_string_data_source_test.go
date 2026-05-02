@@ -59,13 +59,20 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_connection_string" "test" {
   vault_id          = dvls_vault.test.id
   name              = %[3]q
   description       = "test entry for data source"
   folder            = "tf_test_folder"
-  tags              = ["tf-test", "acceptance"]
+  tags              = ["acceptance", "tf-test"]
   connection_string = "Server=localhost;Database=testdb;User=sa;Password=test123"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_connection_string" "test" {
@@ -83,13 +90,20 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_connection_string" "test" {
   vault_id          = dvls_vault.test.id
   name              = %[3]q
   description       = "test entry for data source"
   folder            = "tf_test_folder"
-  tags              = ["tf-test", "acceptance"]
+  tags              = ["acceptance", "tf-test"]
   connection_string = "Server=localhost;Database=testdb;User=sa;Password=test123"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_connection_string" "test" {

@@ -2,8 +2,8 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
@@ -34,7 +34,7 @@ type EntryCertificateDataSourceModel struct {
 	Folder      types.String      `tfsdk:"folder"`
 	Description types.String      `tfsdk:"description"`
 	Expiration  timetypes.RFC3339 `tfsdk:"expiration"`
-	Tags        []types.String    `tfsdk:"tags"`
+	Tags        types.Set         `tfsdk:"tags"`
 
 	// Document
 	Password types.String `tfsdk:"password"`
@@ -107,7 +107,7 @@ func (d *EntryCertificateDataSource) Schema(ctx context.Context, req datasource.
 				Description: "Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)",
 				Computed:    true,
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				ElementType: types.StringType,
 				Description: "Certificate tags",
 				Computed:    true,
@@ -182,11 +182,9 @@ func (d *EntryCertificateDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	entrycertificateId := data.Id.ValueString()
-
-	entrycertificate, err := d.client.Entries.Certificate.Get(entrycertificateId)
+	entrycertificate, content, err := fetchCertificateEntry(d.client, data.Id.ValueString())
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if errors.Is(err, errCertificateNotFound) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -194,20 +192,7 @@ func (d *EntryCertificateDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	entrycertificate, err = d.client.Entries.Certificate.GetPassword(entrycertificate)
-	if err != nil {
-		resp.Diagnostics.AddError("unable to read certificate entry sensitive information", err.Error())
-		return
-	}
-
-	entryBytes, err := d.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
-	if err != nil {
-		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
-		return
-	}
-
-	diagsModel := setEntryCertificateDataModel(ctx, entrycertificate, data, entryBytes)
-	resp.Diagnostics.Append(diagsModel...)
+	resp.Diagnostics.Append(setEntryCertificateDataModel(ctx, entrycertificate, data, content)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -16,6 +16,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &EntryCredentialUsernamePasswordResource{}
 var _ resource.ResourceWithImportState = &EntryCredentialUsernamePasswordResource{}
+var _ resource.ResourceWithUpgradeState = &EntryCredentialUsernamePasswordResource{}
 
 func NewEntryCredentialUsernamePasswordResource() resource.Resource {
 	return &EntryCredentialUsernamePasswordResource{}
@@ -28,12 +29,12 @@ type EntryCredentialUsernamePasswordResource struct {
 
 // EntryCredentialUsernamePasswordResourceModel describes the resource data model.
 type EntryCredentialUsernamePasswordResourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	Username types.String `tfsdk:"username"`
@@ -47,6 +48,7 @@ func (r *EntryCredentialUsernamePasswordResource) Metadata(ctx context.Context, 
 
 func (r *EntryCredentialUsernamePasswordResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:     1,
 		Description: "A DVLS Username and Password Credential Entry",
 
 		Attributes: map[string]schema.Attribute{
@@ -72,10 +74,11 @@ func (r *EntryCredentialUsernamePasswordResource) Schema(ctx context.Context, re
 				Description: "The description of the entry.",
 				Optional:    true,
 			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags to add to the entry.",
-				Optional:    true,
+			"tags": schema.SetAttribute{
+				ElementType:   types.StringType,
+				Description:   "A list of tags to add to the entry.",
+				Optional:      true,
+				PlanModifiers: []planmodifier.Set{emptyTagsToNull()},
 			},
 			"username": schema.StringAttribute{
 				Description: "The entry credential username.",
@@ -229,4 +232,55 @@ func (r *EntryCredentialUsernamePasswordResource) ImportState(ctx context.Contex
 
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
+}
+
+func (r *EntryCredentialUsernamePasswordResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"id":          schema.StringAttribute{Computed: true},
+					"vault_id":    schema.StringAttribute{Required: true},
+					"name":        schema.StringAttribute{Required: true},
+					"folder":      schema.StringAttribute{Optional: true},
+					"description": schema.StringAttribute{Optional: true},
+					"tags":        schema.ListAttribute{ElementType: types.StringType, Optional: true},
+					"username":    schema.StringAttribute{Optional: true},
+					"domain":      schema.StringAttribute{Optional: true},
+					"password":    schema.StringAttribute{Optional: true, Sensitive: true},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				type v0Model struct {
+					Id          types.String   `tfsdk:"id"`
+					VaultId     types.String   `tfsdk:"vault_id"`
+					Name        types.String   `tfsdk:"name"`
+					Folder      types.String   `tfsdk:"folder"`
+					Description types.String   `tfsdk:"description"`
+					Tags        []types.String `tfsdk:"tags"`
+					Username    types.String   `tfsdk:"username"`
+					Domain      types.String   `tfsdk:"domain"`
+					Password    types.String   `tfsdk:"password"`
+				}
+
+				var prior v0Model
+				resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				upgraded := EntryCredentialUsernamePasswordResourceModel{
+					Id:          prior.Id,
+					VaultId:     prior.VaultId,
+					Name:        prior.Name,
+					Folder:      prior.Folder,
+					Description: prior.Description,
+					Tags:        tagsListToSet(prior.Tags),
+					Username:    prior.Username,
+					Domain:      prior.Domain,
+					Password:    prior.Password,
+				}
+				resp.Diagnostics.Append(resp.State.Set(ctx, upgraded)...)
+			},
+		},
+	}
 }
