@@ -13,6 +13,7 @@ func TestAccEntryCredentialConnectionStringResource_basic(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_connection_string", "tf_test_folder", "tf_test_folder_updated"),
 			// Create
 			{
 				Config: testAccEntryCredentialConnectionStringResourceConfig(
@@ -26,8 +27,8 @@ func TestAccEntryCredentialConnectionStringResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("dvls_entry_credential_connection_string.test", "description", "test description"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_connection_string.test", "folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_connection_string.test", "tags.#", "2"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_connection_string.test", "tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_connection_string.test", "tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_connection_string.test", "tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_connection_string.test", "tags.1", "tf-test"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_connection_string.test", "connection_string", "Server=localhost;Database=testdb;User=sa;Password=test123"),
 				),
 			},
@@ -67,7 +68,7 @@ resource "dvls_entry_credential_connection_string" "test" {
   name              = %[3]q
   description       = %[4]q
   folder            = %[5]q
-  tags              = ["tf-test", "acceptance"]
+  tags              = ["acceptance", "tf-test"]
   connection_string = %[6]q
 }
 `, testAccProviderConfig(), vaultName, name, description, folder, connectionString)
