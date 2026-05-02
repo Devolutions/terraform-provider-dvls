@@ -14,6 +14,8 @@ func TestAccEntryCredentialAzureServicePrincipalEphemeralResource_byName(t *test
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_azsp_eph_byname", "tf_test_folder"),
+			{Config: testAccEntryCredentialAzureServicePrincipalEphemeralConfig("tf_test_azsp_eph_byname", "tf_test_azsp_eph_byname", "")},
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalEphemeralConfig("tf_test_azsp_eph_byname", "tf_test_azsp_eph_byname", `
 ephemeral "dvls_entry_credential_azure_service_principal" "test" {
@@ -28,8 +30,8 @@ ephemeral "dvls_entry_credential_azure_service_principal" "test" {
 					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
 					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
 				),
 			},
 		},
@@ -43,6 +45,7 @@ func TestAccEntryCredentialAzureServicePrincipalEphemeralResource_byId(t *testin
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_azsp_eph_byid", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalEphemeralConfig("tf_test_azsp_eph_byid", "tf_test_azsp_eph_byid", `
 ephemeral "dvls_entry_credential_azure_service_principal" "test" {
@@ -57,8 +60,8 @@ ephemeral "dvls_entry_credential_azure_service_principal" "test" {
 					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
 					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
 				),
 			},
 		},
@@ -66,6 +69,11 @@ ephemeral "dvls_entry_credential_azure_service_principal" "test" {
 }
 
 func testAccEntryCredentialAzureServicePrincipalEphemeralConfig(vaultName, entryName, ephemeralBlock string) string {
+	echoConfig := ""
+	if ephemeralBlock != "" {
+		echoConfig = testAccEphemeralEchoConfig("ephemeral.dvls_entry_credential_azure_service_principal.test")
+	}
+
 	return fmt.Sprintf(`
 %s
 
@@ -78,7 +86,7 @@ resource "dvls_entry_credential_azure_service_principal" "test" {
   name          = %[3]q
   description   = "test entry for ephemeral resource"
   folder        = "tf_test_folder"
-  tags          = ["tf-test", "acceptance"]
+  tags          = ["acceptance", "tf-test"]
   client_id     = "test-client-id"
   client_secret = "test-client-secret"
   tenant_id     = "test-tenant-id"
@@ -87,5 +95,5 @@ resource "dvls_entry_credential_azure_service_principal" "test" {
 %s
 
 %s
-`, testAccProviderConfig(), vaultName, entryName, ephemeralBlock, testAccEphemeralEchoConfig("ephemeral.dvls_entry_credential_azure_service_principal.test"))
+`, testAccProviderConfig(), vaultName, entryName, ephemeralBlock, echoConfig)
 }

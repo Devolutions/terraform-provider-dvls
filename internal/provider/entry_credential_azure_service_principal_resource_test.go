@@ -13,6 +13,7 @@ func TestAccEntryCredentialAzureServicePrincipalResource_basic(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_azure_sp", "tf_test_folder", "tf_test_folder_updated"),
 			// Create
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalResourceConfig(
@@ -26,8 +27,8 @@ func TestAccEntryCredentialAzureServicePrincipalResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "description", "test description"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.#", "2"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.1", "tf-test"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "client_id", "test-client-id"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "client_secret", "test-client-secret"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tenant_id", "test-tenant-id"),
@@ -71,7 +72,7 @@ resource "dvls_entry_credential_azure_service_principal" "test" {
   name          = %[3]q
   description   = %[4]q
   folder        = %[5]q
-  tags          = ["tf-test", "acceptance"]
+  tags          = ["acceptance", "tf-test"]
   client_id     = %[6]q
   client_secret = %[7]q
   tenant_id     = %[8]q

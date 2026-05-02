@@ -13,6 +13,7 @@ func TestAccEntryCredentialSSHKeyResource_basic(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_ssh_key", "tf_test_folder", "tf_test_folder_updated"),
 			// Create
 			{
 				Config: testAccEntryCredentialSSHKeyResourceConfig(
@@ -26,8 +27,8 @@ func TestAccEntryCredentialSSHKeyResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "description", "test description"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "tags.#", "2"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "tags.1", "tf-test"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "username", "testuser"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "password", "testpassword"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_ssh_key.test", "passphrase", "testpassphrase"),
@@ -75,7 +76,7 @@ resource "dvls_entry_credential_ssh_key" "test" {
   name             = %[3]q
   description      = %[4]q
   folder           = %[5]q
-  tags             = ["tf-test", "acceptance"]
+  tags             = ["acceptance", "tf-test"]
   username         = %[6]q
   password         = %[7]q
   passphrase       = %[8]q

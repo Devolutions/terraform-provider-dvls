@@ -13,6 +13,7 @@ func TestAccEntryCredentialSSHKeyDataSource_byName(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_ssh_key_by_name", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialSSHKeyDataSourceConfig_byName("tf_test_ssh_key_by_name", "tf_test_ssh_key_by_name"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -39,6 +40,7 @@ func TestAccEntryCredentialSSHKeyDataSource_byId(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_ssh_key_by_id", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialSSHKeyDataSourceConfig_byId("tf_test_ssh_key_by_id", "tf_test_ssh_key_by_id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -72,7 +74,7 @@ resource "dvls_entry_credential_ssh_key" "test" {
   name             = %[3]q
   description      = "test entry for data source"
   folder           = "tf_test_folder"
-  tags             = ["tf-test", "acceptance"]
+  tags             = ["acceptance", "tf-test"]
   username         = "testuser"
   password         = "testpassword"
   passphrase       = "testpassphrase"
@@ -100,7 +102,7 @@ resource "dvls_entry_credential_ssh_key" "test" {
   name             = %[3]q
   description      = "test entry for data source"
   folder           = "tf_test_folder"
-  tags             = ["tf-test", "acceptance"]
+  tags             = ["acceptance", "tf-test"]
   username         = "testuser"
   password         = "testpassword"
   passphrase       = "testpassphrase"

@@ -13,6 +13,7 @@ func TestAccEntryCredentialSecretResource_basic(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_secret", "tf_test_folder", "tf_test_folder_updated"),
 			// Create
 			{
 				Config: testAccEntryCredentialSecretResourceConfig(
@@ -26,8 +27,8 @@ func TestAccEntryCredentialSecretResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "description", "test description"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "tags.#", "2"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "tags.1", "tf-test"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_secret.test", "secret", "my-secret-value-123"),
 				),
 			},
@@ -67,7 +68,7 @@ resource "dvls_entry_credential_secret" "test" {
   name        = %[3]q
   description = %[4]q
   folder      = %[5]q
-  tags        = ["tf-test", "acceptance"]
+  tags        = ["acceptance", "tf-test"]
   secret      = %[6]q
 }
 `, testAccProviderConfig(), vaultName, name, description, folder, secret)
