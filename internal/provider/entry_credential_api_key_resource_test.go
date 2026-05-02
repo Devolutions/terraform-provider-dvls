@@ -13,6 +13,7 @@ func TestAccEntryCredentialApiKeyResource_basic(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_api_key", "tf_test_folder", "tf_test_folder_updated"),
 			// Create
 			{
 				Config: testAccEntryCredentialApiKeyResourceConfig(
@@ -26,8 +27,8 @@ func TestAccEntryCredentialApiKeyResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "description", "test description"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tags.#", "2"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tags.1", "tf-test"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "api_id", "test-api-id"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "api_key", "test-api-key-secret"),
 					resource.TestCheckResourceAttr("dvls_entry_credential_api_key.test", "tenant_id", "test-tenant-id"),
@@ -71,7 +72,7 @@ resource "dvls_entry_credential_api_key" "test" {
   name        = %[3]q
   description = %[4]q
   folder      = %[5]q
-  tags        = ["tf-test", "acceptance"]
+  tags        = ["acceptance", "tf-test"]
   api_id      = %[6]q
   api_key     = %[7]q
   tenant_id   = %[8]q

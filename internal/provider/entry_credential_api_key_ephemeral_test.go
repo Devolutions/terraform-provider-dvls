@@ -14,6 +14,8 @@ func TestAccEntryCredentialApiKeyEphemeralResource_byName(t *testing.T) {
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_api_key_eph_byname", "tf_test_folder"),
+			{Config: testAccEntryCredentialApiKeyEphemeralConfig("tf_test_api_key_eph_byname", "tf_test_api_key_eph_byname", "")},
 			{
 				Config: testAccEntryCredentialApiKeyEphemeralConfig("tf_test_api_key_eph_byname", "tf_test_api_key_eph_byname", `
 ephemeral "dvls_entry_credential_api_key" "test" {
@@ -28,8 +30,8 @@ ephemeral "dvls_entry_credential_api_key" "test" {
 					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
 					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
 				),
 			},
 		},
@@ -43,6 +45,7 @@ func TestAccEntryCredentialApiKeyEphemeralResource_byId(t *testing.T) {
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_api_key_eph_byid", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialApiKeyEphemeralConfig("tf_test_api_key_eph_byid", "tf_test_api_key_eph_byid", `
 ephemeral "dvls_entry_credential_api_key" "test" {
@@ -57,8 +60,8 @@ ephemeral "dvls_entry_credential_api_key" "test" {
 					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
 					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
 				),
 			},
 		},
@@ -66,6 +69,11 @@ ephemeral "dvls_entry_credential_api_key" "test" {
 }
 
 func testAccEntryCredentialApiKeyEphemeralConfig(vaultName, entryName, ephemeralBlock string) string {
+	echoConfig := ""
+	if ephemeralBlock != "" {
+		echoConfig = testAccEphemeralEchoConfig("ephemeral.dvls_entry_credential_api_key.test")
+	}
+
 	return fmt.Sprintf(`
 %s
 
@@ -78,7 +86,7 @@ resource "dvls_entry_credential_api_key" "test" {
   name        = %[3]q
   description = "test entry for ephemeral resource"
   folder      = "tf_test_folder"
-  tags        = ["tf-test", "acceptance"]
+  tags        = ["acceptance", "tf-test"]
   api_id      = "test-api-id"
   api_key     = "test-api-key-secret"
   tenant_id   = "test-tenant-id"
@@ -87,5 +95,5 @@ resource "dvls_entry_credential_api_key" "test" {
 %s
 
 %s
-`, testAccProviderConfig(), vaultName, entryName, ephemeralBlock, testAccEphemeralEchoConfig("ephemeral.dvls_entry_credential_api_key.test"))
+`, testAccProviderConfig(), vaultName, entryName, ephemeralBlock, echoConfig)
 }

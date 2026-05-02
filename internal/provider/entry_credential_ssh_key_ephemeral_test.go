@@ -14,6 +14,8 @@ func TestAccEntryCredentialSSHKeyEphemeralResource_byName(t *testing.T) {
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_sshkey_eph_byname", "tf_test_folder"),
+			{Config: testAccEntryCredentialSSHKeyEphemeralConfig("tf_test_sshkey_eph_byname", "tf_test_sshkey_eph_byname", "")},
 			{
 				Config: testAccEntryCredentialSSHKeyEphemeralConfig("tf_test_sshkey_eph_byname", "tf_test_sshkey_eph_byname", `
 ephemeral "dvls_entry_credential_ssh_key" "test" {
@@ -29,8 +31,8 @@ ephemeral "dvls_entry_credential_ssh_key" "test" {
 					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
 					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
 				),
 			},
 		},
@@ -44,6 +46,7 @@ func TestAccEntryCredentialSSHKeyEphemeralResource_byId(t *testing.T) {
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
+			testAccVaultWithFoldersStep("tf_test_sshkey_eph_byid", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialSSHKeyEphemeralConfig("tf_test_sshkey_eph_byid", "tf_test_sshkey_eph_byid", `
 ephemeral "dvls_entry_credential_ssh_key" "test" {
@@ -59,8 +62,8 @@ ephemeral "dvls_entry_credential_ssh_key" "test" {
 					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
 					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "tf-test"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
+					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
 				),
 			},
 		},
@@ -68,6 +71,11 @@ ephemeral "dvls_entry_credential_ssh_key" "test" {
 }
 
 func testAccEntryCredentialSSHKeyEphemeralConfig(vaultName, entryName, ephemeralBlock string) string {
+	echoConfig := ""
+	if ephemeralBlock != "" {
+		echoConfig = testAccEphemeralEchoConfig("ephemeral.dvls_entry_credential_ssh_key.test")
+	}
+
 	return fmt.Sprintf(`
 %s
 
@@ -80,7 +88,7 @@ resource "dvls_entry_credential_ssh_key" "test" {
   name             = %[3]q
   description      = "test entry for ephemeral resource"
   folder           = "tf_test_folder"
-  tags             = ["tf-test", "acceptance"]
+  tags             = ["acceptance", "tf-test"]
   username         = "testuser"
   password         = "testpassword"
   passphrase       = "testpassphrase"
@@ -90,5 +98,5 @@ resource "dvls_entry_credential_ssh_key" "test" {
 %s
 
 %s
-`, testAccProviderConfig(), vaultName, entryName, ephemeralBlock, testAccEphemeralEchoConfig("ephemeral.dvls_entry_credential_ssh_key.test"))
+`, testAccProviderConfig(), vaultName, entryName, ephemeralBlock, echoConfig)
 }
