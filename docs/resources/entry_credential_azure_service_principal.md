@@ -40,7 +40,7 @@ resource "dvls_entry_credential_azure_service_principal" "example" {
 - `client_secret` (String, Sensitive) The entry credential client secret.
 - `description` (String) The description of the entry.
 - `folder` (String) The folder path where the entry is created.
-- `tags` (List of String) A list of tags to add to the entry.
+- `tags` (Set of String) A list of tags to add to the entry.
 - `tenant_id` (String) The entry credential tenant ID.
 
 ### Read-Only

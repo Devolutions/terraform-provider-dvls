@@ -13,7 +13,6 @@ func TestAccEntryCredentialSSHKeyDataSource_byName(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_ssh_key_by_name", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialSSHKeyDataSourceConfig_byName("tf_test_ssh_key_by_name", "tf_test_ssh_key_by_name"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -40,7 +39,6 @@ func TestAccEntryCredentialSSHKeyDataSource_byId(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_ssh_key_by_id", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialSSHKeyDataSourceConfig_byId("tf_test_ssh_key_by_id", "tf_test_ssh_key_by_id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -69,6 +67,11 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_ssh_key" "test" {
   vault_id         = dvls_vault.test.id
   name             = %[3]q
@@ -80,6 +83,8 @@ resource "dvls_entry_credential_ssh_key" "test" {
   passphrase       = "testpassphrase"
   private_key_data = "test-private-key-data"
   public_key       = "test-public-key"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_ssh_key" "test" {
@@ -97,6 +102,11 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_ssh_key" "test" {
   vault_id         = dvls_vault.test.id
   name             = %[3]q
@@ -108,6 +118,8 @@ resource "dvls_entry_credential_ssh_key" "test" {
   passphrase       = "testpassphrase"
   private_key_data = "test-private-key-data"
   public_key       = "test-public-key"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_ssh_key" "test" {

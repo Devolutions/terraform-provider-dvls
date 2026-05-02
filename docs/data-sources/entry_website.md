@@ -31,7 +31,7 @@ data "dvls_entry_website" "example" {
 - `folder` (String) Website folder path
 - `name` (String) Website name
 - `password` (String, Sensitive) Website password
-- `tags` (List of String) Website tags
+- `tags` (Set of String) Website tags
 - `url` (String) Website URL
 - `username` (String) Website username
 - `vault_id` (String) Vault ID

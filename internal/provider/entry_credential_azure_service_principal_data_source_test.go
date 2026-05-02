@@ -13,7 +13,6 @@ func TestAccEntryCredentialAzureServicePrincipalDataSource_byName(t *testing.T) 
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_azure_sp_by_name", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalDataSourceConfig_byName("tf_test_azure_sp_by_name", "tf_test_azure_sp_by_name"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -38,7 +37,6 @@ func TestAccEntryCredentialAzureServicePrincipalDataSource_byId(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_azure_sp_by_id", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalDataSourceConfig_byId("tf_test_azure_sp_by_id", "tf_test_azure_sp_by_id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -65,6 +63,11 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_azure_service_principal" "test" {
   vault_id      = dvls_vault.test.id
   name          = %[3]q
@@ -74,6 +77,8 @@ resource "dvls_entry_credential_azure_service_principal" "test" {
   client_id     = "test-client-id"
   client_secret = "test-client-secret"
   tenant_id     = "test-tenant-id"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_azure_service_principal" "test" {
@@ -91,6 +96,11 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_azure_service_principal" "test" {
   vault_id      = dvls_vault.test.id
   name          = %[3]q
@@ -100,6 +110,8 @@ resource "dvls_entry_credential_azure_service_principal" "test" {
   client_id     = "test-client-id"
   client_secret = "test-client-secret"
   tenant_id     = "test-tenant-id"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_azure_service_principal" "test" {

@@ -60,7 +60,7 @@ func (e *EntryCertificateEphemeralResource) Schema(_ context.Context, _ ephemera
 				Description: "Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)",
 				Computed:    true,
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				ElementType: types.StringType,
 				Description: "Certificate tags",
 				Computed:    true,

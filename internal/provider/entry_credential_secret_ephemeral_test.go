@@ -14,7 +14,6 @@ func TestAccEntryCredentialSecretEphemeralResource_byName(t *testing.T) {
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_secret_eph_byname", "tf_test_folder"),
 			{Config: testAccEntryCredentialSecretEphemeralConfig("tf_test_secret_eph_byname", "tf_test_secret_eph_byname", "")},
 			{
 				Config: testAccEntryCredentialSecretEphemeralConfig("tf_test_secret_eph_byname", "tf_test_secret_eph_byname", `
@@ -29,8 +28,8 @@ ephemeral "dvls_entry_credential_secret" "test" {
 					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
 					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
+					resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", "acceptance"),
+					resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", "tf-test"),
 				),
 			},
 		},
@@ -44,7 +43,6 @@ func TestAccEntryCredentialSecretEphemeralResource_byId(t *testing.T) {
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_secret_eph_byid", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialSecretEphemeralConfig("tf_test_secret_eph_byid", "tf_test_secret_eph_byid", `
 ephemeral "dvls_entry_credential_secret" "test" {
@@ -58,8 +56,8 @@ ephemeral "dvls_entry_credential_secret" "test" {
 					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
 					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
 					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
+					resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", "acceptance"),
+					resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", "tf-test"),
 				),
 			},
 		},
@@ -79,6 +77,11 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_secret" "test" {
   vault_id    = dvls_vault.test.id
   name        = %[3]q
@@ -86,6 +89,8 @@ resource "dvls_entry_credential_secret" "test" {
   folder      = "tf_test_folder"
   tags        = ["acceptance", "tf-test"]
   secret      = "my-secret-value-123"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 %s

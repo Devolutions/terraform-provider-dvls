@@ -16,6 +16,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &EntryCredentialApiKeyResource{}
 var _ resource.ResourceWithImportState = &EntryCredentialApiKeyResource{}
+var _ resource.ResourceWithUpgradeState = &EntryCredentialApiKeyResource{}
 
 func NewEntryCredentialApiKeyResource() resource.Resource {
 	return &EntryCredentialApiKeyResource{}
@@ -28,12 +29,12 @@ type EntryCredentialApiKeyResource struct {
 
 // EntryCredentialApiKeyResourceModel describes the resource data model.
 type EntryCredentialApiKeyResourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	ApiId    types.String `tfsdk:"api_id"`
@@ -47,6 +48,7 @@ func (r *EntryCredentialApiKeyResource) Metadata(ctx context.Context, req resour
 
 func (r *EntryCredentialApiKeyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:     1,
 		Description: "A DVLS API Key Credential Entry",
 
 		Attributes: map[string]schema.Attribute{
@@ -72,10 +74,11 @@ func (r *EntryCredentialApiKeyResource) Schema(ctx context.Context, req resource
 				Description: "The description of the entry.",
 				Optional:    true,
 			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags to add to the entry.",
-				Optional:    true,
+			"tags": schema.SetAttribute{
+				ElementType:   types.StringType,
+				Description:   "A list of tags to add to the entry.",
+				Optional:      true,
+				PlanModifiers: []planmodifier.Set{emptyTagsToNull()},
 			},
 			"api_id": schema.StringAttribute{
 				Description: "The entry credential API ID.",
@@ -229,4 +232,54 @@ func (r *EntryCredentialApiKeyResource) ImportState(ctx context.Context, req res
 
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
+}
+
+func (r *EntryCredentialApiKeyResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"id":          schema.StringAttribute{Computed: true},
+					"vault_id":    schema.StringAttribute{Required: true},
+					"name":        schema.StringAttribute{Required: true},
+					"folder":      schema.StringAttribute{Optional: true},
+					"description": schema.StringAttribute{Optional: true},
+					"tags":        schema.ListAttribute{ElementType: types.StringType, Optional: true},
+					"api_id":      schema.StringAttribute{Optional: true},
+					"api_key":     schema.StringAttribute{Optional: true, Sensitive: true},
+					"tenant_id":   schema.StringAttribute{Optional: true},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				type v0Model struct {
+					Id          types.String   `tfsdk:"id"`
+					VaultId     types.String   `tfsdk:"vault_id"`
+					Name        types.String   `tfsdk:"name"`
+					Folder      types.String   `tfsdk:"folder"`
+					Description types.String   `tfsdk:"description"`
+					Tags        []types.String `tfsdk:"tags"`
+					ApiId       types.String   `tfsdk:"api_id"`
+					ApiKey      types.String   `tfsdk:"api_key"`
+					TenantId    types.String   `tfsdk:"tenant_id"`
+				}
+				var prior v0Model
+				resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				upgraded := EntryCredentialApiKeyResourceModel{
+					Id:          prior.Id,
+					VaultId:     prior.VaultId,
+					Name:        prior.Name,
+					Folder:      prior.Folder,
+					Description: prior.Description,
+					Tags:        tagsListToSet(prior.Tags),
+					ApiId:       prior.ApiId,
+					ApiKey:      prior.ApiKey,
+					TenantId:    prior.TenantId,
+				}
+				resp.Diagnostics.Append(resp.State.Set(ctx, upgraded)...)
+			},
+		},
+	}
 }

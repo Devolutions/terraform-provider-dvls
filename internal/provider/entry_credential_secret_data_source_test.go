@@ -13,7 +13,6 @@ func TestAccEntryCredentialSecretDataSource_byName(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_secret_by_name", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialSecretDataSourceConfig_byName("tf_test_secret_by_name", "tf_test_secret_by_name"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -36,7 +35,6 @@ func TestAccEntryCredentialSecretDataSource_byId(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_secret_by_id", "tf_test_folder"),
 			{
 				Config: testAccEntryCredentialSecretDataSourceConfig_byId("tf_test_secret_by_id", "tf_test_secret_by_id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -61,6 +59,11 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_secret" "test" {
   vault_id    = dvls_vault.test.id
   name        = %[3]q
@@ -68,6 +71,8 @@ resource "dvls_entry_credential_secret" "test" {
   folder      = "tf_test_folder"
   tags        = ["acceptance", "tf-test"]
   secret      = "my-secret-value-123"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_secret" "test" {
@@ -85,6 +90,11 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
 resource "dvls_entry_credential_secret" "test" {
   vault_id    = dvls_vault.test.id
   name        = %[3]q
@@ -92,6 +102,8 @@ resource "dvls_entry_credential_secret" "test" {
   folder      = "tf_test_folder"
   tags        = ["acceptance", "tf-test"]
   secret      = "my-secret-value-123"
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 data "dvls_entry_credential_secret" "test" {

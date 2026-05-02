@@ -32,6 +32,6 @@ data "dvls_entry_host" "example" {
 - `host` (String) Host
 - `name` (String) Host name
 - `password` (String, Sensitive) Host password
-- `tags` (List of String) Host tags
+- `tags` (Set of String) Host tags
 - `username` (String) Host username
 - `vault_id` (String) Vault ID

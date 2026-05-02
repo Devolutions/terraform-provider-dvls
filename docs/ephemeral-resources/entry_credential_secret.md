@@ -51,4 +51,4 @@ ephemeral "dvls_entry_credential_secret" "by_name_in_folder" {
 
 - `description` (String) The description of the entry.
 - `secret` (String, Sensitive) The entry credential secret.
-- `tags` (List of String) A list of tags added to the entry.
+- `tags` (Set of String) A list of tags added to the entry.

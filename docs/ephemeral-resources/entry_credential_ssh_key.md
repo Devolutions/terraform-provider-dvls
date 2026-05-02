@@ -54,5 +54,5 @@ ephemeral "dvls_entry_credential_ssh_key" "by_name_in_folder" {
 - `password` (String, Sensitive) The entry credential password.
 - `private_key_data` (String, Sensitive) The entry credential private key data.
 - `public_key` (String) The entry credential public key data.
-- `tags` (List of String) A list of tags added to the entry.
+- `tags` (Set of String) A list of tags added to the entry.
 - `username` (String) The entry credential username.

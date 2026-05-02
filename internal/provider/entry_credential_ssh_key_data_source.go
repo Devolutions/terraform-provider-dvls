@@ -29,12 +29,12 @@ type EntryCredentialSSHKeyDataSource struct {
 
 // EntryCredentialSSHKeyDataSourceModel describes the data source data model.
 type EntryCredentialSSHKeyDataSourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	Username       types.String `tfsdk:"username"`
@@ -79,7 +79,7 @@ func (d *EntryCredentialSSHKeyDataSource) Schema(ctx context.Context, req dataso
 				Description: "The description of the entry.",
 				Computed:    true,
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				ElementType: types.StringType,
 				Description: "A list of tags added to the entry.",
 				Computed:    true,

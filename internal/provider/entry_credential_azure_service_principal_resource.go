@@ -16,6 +16,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &EntryCredentialAzureServicePrincipalResource{}
 var _ resource.ResourceWithImportState = &EntryCredentialAzureServicePrincipalResource{}
+var _ resource.ResourceWithUpgradeState = &EntryCredentialAzureServicePrincipalResource{}
 
 func NewEntryCredentialAzureServicePrincipalResource() resource.Resource {
 	return &EntryCredentialAzureServicePrincipalResource{}
@@ -28,12 +29,12 @@ type EntryCredentialAzureServicePrincipalResource struct {
 
 // EntryCredentialAzureServicePrincipalResourceModel describes the resource data model.
 type EntryCredentialAzureServicePrincipalResourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	ClientId     types.String `tfsdk:"client_id"`
@@ -47,6 +48,7 @@ func (r *EntryCredentialAzureServicePrincipalResource) Metadata(ctx context.Cont
 
 func (r *EntryCredentialAzureServicePrincipalResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:     1,
 		Description: "A DVLS Azure Service Principal Credential Entry",
 
 		Attributes: map[string]schema.Attribute{
@@ -72,10 +74,11 @@ func (r *EntryCredentialAzureServicePrincipalResource) Schema(ctx context.Contex
 				Description: "The description of the entry.",
 				Optional:    true,
 			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags to add to the entry.",
-				Optional:    true,
+			"tags": schema.SetAttribute{
+				ElementType:   types.StringType,
+				Description:   "A list of tags to add to the entry.",
+				Optional:      true,
+				PlanModifiers: []planmodifier.Set{emptyTagsToNull()},
 			},
 			"client_id": schema.StringAttribute{
 				Description: "The entry credential client ID.",
@@ -229,4 +232,55 @@ func (r *EntryCredentialAzureServicePrincipalResource) ImportState(ctx context.C
 
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
+}
+
+func (r *EntryCredentialAzureServicePrincipalResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"id":            schema.StringAttribute{Computed: true},
+					"vault_id":      schema.StringAttribute{Required: true},
+					"name":          schema.StringAttribute{Required: true},
+					"folder":        schema.StringAttribute{Optional: true},
+					"description":   schema.StringAttribute{Optional: true},
+					"tags":          schema.ListAttribute{ElementType: types.StringType, Optional: true},
+					"client_id":     schema.StringAttribute{Optional: true},
+					"client_secret": schema.StringAttribute{Optional: true, Sensitive: true},
+					"tenant_id":     schema.StringAttribute{Optional: true},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				type v0Model struct {
+					Id           types.String   `tfsdk:"id"`
+					VaultId      types.String   `tfsdk:"vault_id"`
+					Name         types.String   `tfsdk:"name"`
+					Folder       types.String   `tfsdk:"folder"`
+					Description  types.String   `tfsdk:"description"`
+					Tags         []types.String `tfsdk:"tags"`
+					ClientId     types.String   `tfsdk:"client_id"`
+					ClientSecret types.String   `tfsdk:"client_secret"`
+					TenantId     types.String   `tfsdk:"tenant_id"`
+				}
+
+				var prior v0Model
+				resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				upgraded := EntryCredentialAzureServicePrincipalResourceModel{
+					Id:           prior.Id,
+					VaultId:      prior.VaultId,
+					Name:         prior.Name,
+					Folder:       prior.Folder,
+					Description:  prior.Description,
+					Tags:         tagsListToSet(prior.Tags),
+					ClientId:     prior.ClientId,
+					ClientSecret: prior.ClientSecret,
+					TenantId:     prior.TenantId,
+				}
+				resp.Diagnostics.Append(resp.State.Set(ctx, upgraded)...)
+			},
+		},
+	}
 }

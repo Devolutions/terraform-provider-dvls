@@ -23,6 +23,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &EntryCertificateResource{}
 var _ resource.ResourceWithImportState = &EntryCertificateResource{}
+var _ resource.ResourceWithUpgradeState = &EntryCertificateResource{}
 
 func NewEntryCertificateResource() resource.Resource {
 	return &EntryCertificateResource{}
@@ -41,7 +42,7 @@ type EntryCertificateResourceModel struct {
 	Folder      types.String      `tfsdk:"folder"`
 	Description types.String      `tfsdk:"description"`
 	Expiration  timetypes.RFC3339 `tfsdk:"expiration"`
-	Tags        []types.String    `tfsdk:"tags"`
+	Tags        types.Set         `tfsdk:"tags"`
 
 	// Document
 	Password types.String `tfsdk:"password"`
@@ -85,6 +86,7 @@ func (r *EntryCertificateResource) Metadata(ctx context.Context, req resource.Me
 
 func (r *EntryCertificateResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:     1,
 		Description: "A DVLS Certificate",
 
 		Attributes: map[string]schema.Attribute{
@@ -115,10 +117,11 @@ func (r *EntryCertificateResource) Schema(ctx context.Context, req resource.Sche
 				Description: "Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)",
 				Required:    true,
 			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "Certificate tags",
-				Optional:    true,
+			"tags": schema.SetAttribute{
+				ElementType:   types.StringType,
+				Description:   "Certificate tags",
+				Optional:      true,
+				PlanModifiers: []planmodifier.Set{emptyTagsToNull()},
 			},
 
 			"password": schema.StringAttribute{
@@ -302,4 +305,70 @@ func (r *EntryCertificateResource) Delete(ctx context.Context, req resource.Dele
 
 func (r *EntryCertificateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *EntryCertificateResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"id":          schema.StringAttribute{Computed: true},
+					"vault_id":    schema.StringAttribute{Required: true},
+					"name":        schema.StringAttribute{Required: true},
+					"folder":      schema.StringAttribute{Optional: true},
+					"description": schema.StringAttribute{Optional: true},
+					"expiration":  schema.StringAttribute{CustomType: timetypes.RFC3339Type{}, Required: true},
+					"tags":        schema.ListAttribute{ElementType: types.StringType, Optional: true},
+					"password":    schema.StringAttribute{Optional: true, Sensitive: true},
+					"file": schema.SingleNestedAttribute{
+						Optional:  true,
+						Sensitive: true,
+						Attributes: map[string]schema.Attribute{
+							"content_b64": schema.StringAttribute{Required: true, Sensitive: true},
+							"name":        schema.StringAttribute{Required: true},
+						},
+					},
+					"url": schema.SingleNestedAttribute{
+						Optional: true,
+						Attributes: map[string]schema.Attribute{
+							"url":                     schema.StringAttribute{Required: true},
+							"use_default_credentials": schema.BoolAttribute{Optional: true, Computed: true},
+						},
+					},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				type v0Model struct {
+					Id          types.String      `tfsdk:"id"`
+					VaultId     types.String      `tfsdk:"vault_id"`
+					Name        types.String      `tfsdk:"name"`
+					Folder      types.String      `tfsdk:"folder"`
+					Description types.String      `tfsdk:"description"`
+					Expiration  timetypes.RFC3339 `tfsdk:"expiration"`
+					Tags        []types.String    `tfsdk:"tags"`
+					Password    types.String      `tfsdk:"password"`
+					File        types.Object      `tfsdk:"file"`
+					Url         types.Object      `tfsdk:"url"`
+				}
+				var prior v0Model
+				resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				upgraded := EntryCertificateResourceModel{
+					Id:          prior.Id,
+					VaultId:     prior.VaultId,
+					Name:        prior.Name,
+					Folder:      prior.Folder,
+					Description: prior.Description,
+					Expiration:  prior.Expiration,
+					Tags:        tagsListToSet(prior.Tags),
+					Password:    prior.Password,
+					File:        prior.File,
+					Url:         prior.Url,
+				}
+				resp.Diagnostics.Append(resp.State.Set(ctx, upgraded)...)
+			},
+		},
+	}
 }

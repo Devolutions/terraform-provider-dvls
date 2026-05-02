@@ -1,11 +1,7 @@
 package provider
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 	"testing"
 
@@ -83,65 +79,7 @@ provider "dvls" {
 `, os.Getenv("TEST_DVLS_BASE_URI"))
 }
 
-// testAccCreateFolderInVault posts a Folder entry to a vault. DVLS rejects
-// credential creation with status 400 when its `path` references a folder
-// that does not exist; tests that exercise the folder attribute must
-// pre-create the folder via this helper.
-func testAccCreateFolderInVault(vaultId, folderName string) error {
-	client, err := getTestAccClient()
-	if err != nil {
-		return err
-	}
-
-	body, err := json.Marshal(map[string]any{
-		"name":    folderName,
-		"type":    "Folder",
-		"subType": "Folder",
-		"data":    map[string]any{},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to marshal folder body: %w", err)
-	}
-
-	reqURL, err := url.JoinPath(os.Getenv("TEST_DVLS_BASE_URI"), "/api/v1/vault/", vaultId, "/entry")
-	if err != nil {
-		return fmt.Errorf("failed to build folder url: %w", err)
-	}
-
-	if _, err := client.Request(reqURL, http.MethodPost, bytes.NewBuffer(body)); err != nil {
-		return fmt.Errorf("failed to create folder %q in vault %s: %w", folderName, vaultId, err)
-	}
-	return nil
-}
-
-// testAccVaultWithFoldersStep returns a TestStep that creates dvls_vault.test
-// and pre-creates the given folders inside it via the DVLS API. Prepend it to
-// a test's Steps when subsequent steps set `folder` on a credential entry.
-func testAccVaultWithFoldersStep(vaultName string, folderNames ...string) resource.TestStep {
-	return resource.TestStep{
-		Config: fmt.Sprintf(`
-%s
-
-resource "dvls_vault" "test" {
-  name = %q
-}
-`, testAccProviderConfig(), vaultName),
-		Check: func(s *terraform.State) error {
-			rs, ok := s.RootModule().Resources["dvls_vault.test"]
-			if !ok {
-				return fmt.Errorf("dvls_vault.test not found in state")
-			}
-			for _, name := range folderNames {
-				if err := testAccCreateFolderInVault(rs.Primary.ID, name); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	}
-}
-
-func testAccEntryCredentialImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
+func testAccEntryImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {

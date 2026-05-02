@@ -104,6 +104,7 @@ func (p *DvlsProvider) Resources(ctx context.Context) []func() resource.Resource
 		NewEntryCredentialSecretResource,
 		NewEntryCredentialSSHKeyResource,
 		NewEntryCredentialUsernamePasswordResource,
+		NewEntryFolderResource,
 		NewVaultResource,
 	}
 }

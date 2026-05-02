@@ -52,5 +52,5 @@ ephemeral "dvls_entry_credential_username_password" "by_name_in_folder" {
 - `description` (String) The description of the entry.
 - `domain` (String) The entry credential domain.
 - `password` (String, Sensitive) The entry credential password.
-- `tags` (List of String) A list of tags added to the entry.
+- `tags` (Set of String) A list of tags added to the entry.
 - `username` (String) The entry credential username.
