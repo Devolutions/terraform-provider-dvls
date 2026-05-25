@@ -45,6 +45,67 @@ resource "echo" "test" {}
 `, refExpr)
 }
 
+// Shared literals used by every ephemeral acceptance test. Centralized so
+// the HCL config and the TestCheckResourceAttr assertions reference one
+// source of truth.
+const (
+	testAccEphFolder      = "tf_test_folder"
+	testAccEphDescription = "test entry for ephemeral resource"
+)
+
+var testAccEphTags = []string{"acceptance", "tf-test"}
+
+// ephemeralLookupBlock builds an ephemeral { ... } HCL block that looks up
+// `resourceType.test` by either "name" or "id" (whichever lookupField is).
+// All 6 credential ephemeral tests share this exact shape — only the
+// resource type and lookup field differ.
+func ephemeralLookupBlock(resourceType, lookupField string) string {
+	return fmt.Sprintf(`
+ephemeral %[1]q "test" {
+  vault_id = dvls_vault.test.id
+  %[2]s = %[1]s.test.%[2]s
+}
+`, resourceType, lookupField)
+}
+
+// testAccEntryCredentialEphemeralConfig builds the HCL for a credential
+// ephemeral acceptance step: provider + vault + credential resource + (when
+// lookupField is non-empty) ephemeral lookup block + echo provider/resource.
+//
+// `fields` is the subtype-specific HCL fragment (e.g. `  secret = "..."`).
+// `lookupField` is "" (creation step, no ephemeral), "name", or "id".
+func testAccEntryCredentialEphemeralConfig(resourceType, vaultName, entryName, fields, lookupField string) string {
+	ephemeralBlock := ""
+	echoConfig := ""
+	if lookupField != "" {
+		ephemeralBlock = ephemeralLookupBlock(resourceType, lookupField)
+		echoConfig = testAccEphemeralEchoConfig(fmt.Sprintf("ephemeral.%s.test", resourceType))
+	}
+
+	return fmt.Sprintf(`
+%[1]s
+
+resource "dvls_vault" "test" {
+  name = %[2]q
+}
+
+resource %[3]q "test" {
+  vault_id = dvls_vault.test.id
+  name = %[4]q
+  description = %[5]q
+  folder = %[6]q
+  tags = [%[7]q, %[8]q]
+%[9]s
+}
+
+%[10]s
+
+%[11]s
+`, testAccProviderConfig(), vaultName, resourceType, entryName,
+		testAccEphDescription, testAccEphFolder, testAccEphTags[0], testAccEphTags[1],
+		fields, ephemeralBlock, echoConfig)
+}
+
 // getTestAccClient returns a freshly authenticated DVLS client. It does not
 // cache the client because tokens are short-lived: a long test run can outlive
 // the session, and a stale client surfaces as 401s in CheckDestroy callbacks.
