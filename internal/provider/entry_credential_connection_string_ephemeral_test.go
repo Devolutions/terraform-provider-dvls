@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -14,23 +13,11 @@ func TestAccEntryCredentialConnectionStringEphemeralResource_byName(t *testing.T
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_connstr_eph_byname", "tf_test_folder"),
+			testAccVaultWithFoldersStep("tf_test_connstr_eph_byname", testAccEphFolder),
 			{Config: testAccEntryCredentialConnectionStringEphemeralConfig("tf_test_connstr_eph_byname", "tf_test_connstr_eph_byname", "")},
 			{
-				Config: testAccEntryCredentialConnectionStringEphemeralConfig("tf_test_connstr_eph_byname", "tf_test_connstr_eph_byname", `
-ephemeral "dvls_entry_credential_connection_string" "test" {
-  vault_id = dvls_vault.test.id
-  name     = dvls_entry_credential_connection_string.test.name
-}
-`),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("echo.test", "data.connection_string", "Server=localhost;Database=test;Trusted_Connection=True;"),
-					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
-					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
-				),
+				Config: testAccEntryCredentialConnectionStringEphemeralConfig("tf_test_connstr_eph_byname", "tf_test_connstr_eph_byname", "name"),
+				Check:  testAccEntryCredentialConnectionStringEphemeralCheck(),
 			},
 		},
 	})
@@ -43,51 +30,32 @@ func TestAccEntryCredentialConnectionStringEphemeralResource_byId(t *testing.T) 
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_connstr_eph_byid", "tf_test_folder"),
+			testAccVaultWithFoldersStep("tf_test_connstr_eph_byid", testAccEphFolder),
 			{
-				Config: testAccEntryCredentialConnectionStringEphemeralConfig("tf_test_connstr_eph_byid", "tf_test_connstr_eph_byid", `
-ephemeral "dvls_entry_credential_connection_string" "test" {
-  vault_id = dvls_vault.test.id
-  id       = dvls_entry_credential_connection_string.test.id
-}
-`),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("echo.test", "data.connection_string", "Server=localhost;Database=test;Trusted_Connection=True;"),
-					resource.TestCheckResourceAttr("echo.test", "data.description", "test entry for ephemeral resource"),
-					resource.TestCheckResourceAttr("echo.test", "data.folder", "tf_test_folder"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.0", "acceptance"),
-					resource.TestCheckResourceAttr("echo.test", "data.tags.1", "tf-test"),
-				),
+				Config: testAccEntryCredentialConnectionStringEphemeralConfig("tf_test_connstr_eph_byid", "tf_test_connstr_eph_byid", "id"),
+				Check:  testAccEntryCredentialConnectionStringEphemeralCheck(),
 			},
 		},
 	})
 }
 
-func testAccEntryCredentialConnectionStringEphemeralConfig(vaultName, entryName, ephemeralBlock string) string {
-	echoConfig := ""
-	if ephemeralBlock != "" {
-		echoConfig = testAccEphemeralEchoConfig("ephemeral.dvls_entry_credential_connection_string.test")
-	}
-
-	return fmt.Sprintf(`
-%s
-
-resource "dvls_vault" "test" {
-  name = %[2]q
+func testAccEntryCredentialConnectionStringEphemeralCheck() resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		resource.TestCheckResourceAttr("echo.test", "data.connection_string", "Server=localhost;Database=test;Trusted_Connection=True;"),
+		resource.TestCheckResourceAttr("echo.test", "data.description", testAccEphDescription),
+		resource.TestCheckResourceAttr("echo.test", "data.folder", testAccEphFolder),
+		resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
+		resource.TestCheckResourceAttr("echo.test", "data.tags.0", testAccEphTags[0]),
+		resource.TestCheckResourceAttr("echo.test", "data.tags.1", testAccEphTags[1]),
+	)
 }
 
-resource "dvls_entry_credential_connection_string" "test" {
-  vault_id          = dvls_vault.test.id
-  name              = %[3]q
-  description       = "test entry for ephemeral resource"
-  folder            = "tf_test_folder"
-  tags              = ["acceptance", "tf-test"]
-  connection_string = "Server=localhost;Database=test;Trusted_Connection=True;"
-}
-
-%s
-
-%s
-`, testAccProviderConfig(), vaultName, entryName, ephemeralBlock, echoConfig)
+func testAccEntryCredentialConnectionStringEphemeralConfig(vaultName, entryName, lookupField string) string {
+	return testAccEntryCredentialEphemeralConfig(
+		"dvls_entry_credential_connection_string",
+		vaultName,
+		entryName,
+		`  connection_string = "Server=localhost;Database=test;Trusted_Connection=True;"`,
+		lookupField,
+	)
 }
