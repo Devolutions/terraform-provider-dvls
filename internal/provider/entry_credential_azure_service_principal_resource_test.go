@@ -13,69 +13,58 @@ func TestAccEntryCredentialAzureServicePrincipalResource_basic(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_azure_sp", "tf_test_folder", "tf_test_folder_updated"),
-			// Create
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalResourceConfig(
 					"tf_test_azure_sp", "tf_test_azure_sp", "test description", "tf_test_folder",
 					"test-client-id", "test-client-secret", "test-tenant-id",
 				),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("dvls_entry_credential_azure_service_principal.test", "id"),
-					resource.TestCheckResourceAttrPair("dvls_entry_credential_azure_service_principal.test", "vault_id", "dvls_vault.test", "id"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "name", "tf_test_azure_sp"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "description", "test description"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "folder", "tf_test_folder"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.#", "2"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.0", "acceptance"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.1", "tf-test"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "client_id", "test-client-id"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "client_secret", "test-client-secret"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tenant_id", "test-tenant-id"),
+				Check: testAccEntryCredentialAzureServicePrincipalResourceCheck(
+					"tf_test_azure_sp", "test description", "tf_test_folder",
+					"test-client-id", "test-client-secret", "test-tenant-id",
 				),
 			},
-			// Update
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalResourceConfig(
 					"tf_test_azure_sp", "tf_test_azure_sp_updated", "updated description", "tf_test_folder_updated",
 					"updated-client-id", "updated-client-secret", "updated-tenant-id",
 				),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "name", "tf_test_azure_sp_updated"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "description", "updated description"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "client_id", "updated-client-id"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "client_secret", "updated-client-secret"),
-					resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tenant_id", "updated-tenant-id"),
+				Check: testAccEntryCredentialAzureServicePrincipalResourceCheck(
+					"tf_test_azure_sp_updated", "updated description", "tf_test_folder_updated",
+					"updated-client-id", "updated-client-secret", "updated-tenant-id",
 				),
 			},
-			// ImportState
 			{
 				ResourceName:      "dvls_entry_credential_azure_service_principal.test",
 				ImportState:       true,
-				ImportStateIdFunc: testAccEntryCredentialImportStateIdFunc("dvls_entry_credential_azure_service_principal.test"),
+				ImportStateIdFunc: testAccEntryImportStateIdFunc("dvls_entry_credential_azure_service_principal.test"),
 				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
+func testAccEntryCredentialAzureServicePrincipalResourceCheck(name, description, folder, clientId, clientSecret, tenantId string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		resource.TestCheckResourceAttrSet("dvls_entry_credential_azure_service_principal.test", "id"),
+		resource.TestCheckResourceAttrPair("dvls_entry_credential_azure_service_principal.test", "vault_id", "dvls_vault.test", "id"),
+		resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "name", name),
+		resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "description", description),
+		resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "folder", folder),
+		resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tags.#", "2"),
+		resource.TestCheckTypeSetElemAttr("dvls_entry_credential_azure_service_principal.test", "tags.*", testAccTestTags[0]),
+		resource.TestCheckTypeSetElemAttr("dvls_entry_credential_azure_service_principal.test", "tags.*", testAccTestTags[1]),
+		resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "client_id", clientId),
+		resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "client_secret", clientSecret),
+		resource.TestCheckResourceAttr("dvls_entry_credential_azure_service_principal.test", "tenant_id", tenantId),
+	)
+}
+
 func testAccEntryCredentialAzureServicePrincipalResourceConfig(vaultName, name, description, folder, clientId, clientSecret, tenantId string) string {
-	return fmt.Sprintf(`
-%s
-
-resource "dvls_vault" "test" {
-  name = %[2]q
-}
-
-resource "dvls_entry_credential_azure_service_principal" "test" {
-  vault_id      = dvls_vault.test.id
-  name          = %[3]q
-  description   = %[4]q
-  folder        = %[5]q
-  tags          = ["acceptance", "tf-test"]
-  client_id     = %[6]q
-  client_secret = %[7]q
-  tenant_id     = %[8]q
-}
-`, testAccProviderConfig(), vaultName, name, description, folder, clientId, clientSecret, tenantId)
+	return testAccEntryCredentialResourceConfig(
+		"dvls_entry_credential_azure_service_principal",
+		vaultName, name, description, folder,
+		fmt.Sprintf(`  client_id = %q
+  client_secret = %q
+  tenant_id = %q`, clientId, clientSecret, tenantId),
+	)
 }

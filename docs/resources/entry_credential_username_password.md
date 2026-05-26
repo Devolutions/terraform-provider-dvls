@@ -32,7 +32,6 @@ resource "dvls_entry_credential_username_password" "example" {
 ### Required
 
 - `name` (String) The name of the entry.
-- `vault_id` (String) The ID of the vault.
 
 ### Optional
 
@@ -40,8 +39,10 @@ resource "dvls_entry_credential_username_password" "example" {
 - `domain` (String) The entry credential domain.
 - `folder` (String) The folder path where the entry is created.
 - `password` (String, Sensitive) The entry credential password.
-- `tags` (List of String) A list of tags to add to the entry.
+- `tags` (Set of String) A list of tags to add to the entry.
 - `username` (String) The entry credential username.
+- `vault_id` (String) The ID of the vault. Exactly one of `vault_id` or `vault_name` must be set.
+- `vault_name` (String) The name of the vault. Exactly one of `vault_id` or `vault_name` must be set.
 
 ### Read-Only
 

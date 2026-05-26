@@ -79,7 +79,7 @@ func credentialEphemeralCommonAttributes() map[string]schema.Attribute {
 			Description: "The description of the entry.",
 			Computed:    true,
 		},
-		"tags": schema.ListAttribute{
+		"tags": schema.SetAttribute{
 			ElementType: types.StringType,
 			Description: "A list of tags added to the entry.",
 			Computed:    true,

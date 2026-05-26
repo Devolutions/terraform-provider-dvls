@@ -42,11 +42,7 @@ func fetchCertificateEntry(client *dvls.Client, id string) (dvls.EntryCertificat
 }
 
 func newEntryCertificateFromResourceModel(plans *EntryCertificateResourceModelData) dvls.EntryCertificate {
-	var tags []string
-
-	for _, v := range plans.Data.Tags {
-		tags = append(tags, v.ValueString())
-	}
+	tags := tagsSetToSlice(plans.Data.Tags)
 
 	expiration, _ := plans.Data.Expiration.ValueRFC3339Time()
 
@@ -79,9 +75,13 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 		return diags
 	}
 
+	// VaultName is user-input only — preserve from the existing model.
+	vaultName := data.VaultName
+
 	model := EntryCertificateResourceModel{
 		Id:         basetypes.NewStringValue(entrycertificate.Id),
 		VaultId:    basetypes.NewStringValue(entrycertificate.VaultId),
+		VaultName:  vaultName,
 		Name:       basetypes.NewStringValue(entrycertificate.Name),
 		Expiration: timeVal,
 		File:       basetypes.NewObjectNull(EntryCertificateResourceModelFile{}.AttributeTypes()),
@@ -96,15 +96,7 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 		model.Description = basetypes.NewStringValue(entrycertificate.Description)
 	}
 
-	if entrycertificate.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entrycertificate.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
-	}
+	model.Tags = tagsSliceToSet(entrycertificate.Tags)
 
 	if entrycertificate.Password != "" {
 		model.Password = basetypes.NewStringValue(entrycertificate.Password)
@@ -171,15 +163,7 @@ func setEntryCertificateDataModel(ctx context.Context, entrycertificate dvls.Ent
 		model.Description = basetypes.NewStringValue(entrycertificate.Description)
 	}
 
-	if entrycertificate.Tags != nil {
-		var tagsBase []types.String
-
-		for _, v := range entrycertificate.Tags {
-			tagsBase = append(tagsBase, basetypes.NewStringValue(v))
-		}
-
-		model.Tags = tagsBase
-	}
+	model.Tags = tagsSliceToSet(entrycertificate.Tags)
 
 	if entrycertificate.Password != "" {
 		model.Password = basetypes.NewStringValue(entrycertificate.Password)

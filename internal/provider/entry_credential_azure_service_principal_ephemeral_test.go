@@ -13,7 +13,6 @@ func TestAccEntryCredentialAzureServicePrincipalEphemeralResource_byName(t *test
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_azsp_eph_byname", testAccEphFolder),
 			{Config: testAccEntryCredentialAzureServicePrincipalEphemeralConfig("tf_test_azsp_eph_byname", "tf_test_azsp_eph_byname", "")},
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalEphemeralConfig("tf_test_azsp_eph_byname", "tf_test_azsp_eph_byname", "name"),
@@ -30,7 +29,6 @@ func TestAccEntryCredentialAzureServicePrincipalEphemeralResource_byId(t *testin
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_azsp_eph_byid", testAccEphFolder),
 			{
 				Config: testAccEntryCredentialAzureServicePrincipalEphemeralConfig("tf_test_azsp_eph_byid", "tf_test_azsp_eph_byid", "id"),
 				Check:  testAccEntryCredentialAzureServicePrincipalEphemeralCheck(),
@@ -44,11 +42,11 @@ func testAccEntryCredentialAzureServicePrincipalEphemeralCheck() resource.TestCh
 		resource.TestCheckResourceAttr("echo.test", "data.client_id", "test-client-id"),
 		resource.TestCheckResourceAttr("echo.test", "data.client_secret", "test-client-secret"),
 		resource.TestCheckResourceAttr("echo.test", "data.tenant_id", "test-tenant-id"),
-		resource.TestCheckResourceAttr("echo.test", "data.description", testAccEphDescription),
-		resource.TestCheckResourceAttr("echo.test", "data.folder", testAccEphFolder),
+		resource.TestCheckResourceAttr("echo.test", "data.description", testAccTestDescription),
+		resource.TestCheckResourceAttr("echo.test", "data.folder", testAccTestFolder),
 		resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-		resource.TestCheckResourceAttr("echo.test", "data.tags.0", testAccEphTags[0]),
-		resource.TestCheckResourceAttr("echo.test", "data.tags.1", testAccEphTags[1]),
+		resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", testAccTestTags[0]),
+		resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", testAccTestTags[1]),
 	)
 }
 
