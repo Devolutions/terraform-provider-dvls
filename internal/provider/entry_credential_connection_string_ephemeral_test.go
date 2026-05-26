@@ -13,7 +13,6 @@ func TestAccEntryCredentialConnectionStringEphemeralResource_byName(t *testing.T
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_connstr_eph_byname", testAccEphFolder),
 			{Config: testAccEntryCredentialConnectionStringEphemeralConfig("tf_test_connstr_eph_byname", "tf_test_connstr_eph_byname", "")},
 			{
 				Config: testAccEntryCredentialConnectionStringEphemeralConfig("tf_test_connstr_eph_byname", "tf_test_connstr_eph_byname", "name"),
@@ -30,7 +29,6 @@ func TestAccEntryCredentialConnectionStringEphemeralResource_byId(t *testing.T) 
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_connstr_eph_byid", testAccEphFolder),
 			{
 				Config: testAccEntryCredentialConnectionStringEphemeralConfig("tf_test_connstr_eph_byid", "tf_test_connstr_eph_byid", "id"),
 				Check:  testAccEntryCredentialConnectionStringEphemeralCheck(),
@@ -42,11 +40,11 @@ func TestAccEntryCredentialConnectionStringEphemeralResource_byId(t *testing.T) 
 func testAccEntryCredentialConnectionStringEphemeralCheck() resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc(
 		resource.TestCheckResourceAttr("echo.test", "data.connection_string", "Server=localhost;Database=test;Trusted_Connection=True;"),
-		resource.TestCheckResourceAttr("echo.test", "data.description", testAccEphDescription),
-		resource.TestCheckResourceAttr("echo.test", "data.folder", testAccEphFolder),
+		resource.TestCheckResourceAttr("echo.test", "data.description", testAccTestDescription),
+		resource.TestCheckResourceAttr("echo.test", "data.folder", testAccTestFolder),
 		resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-		resource.TestCheckResourceAttr("echo.test", "data.tags.0", testAccEphTags[0]),
-		resource.TestCheckResourceAttr("echo.test", "data.tags.1", testAccEphTags[1]),
+		resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", testAccTestTags[0]),
+		resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", testAccTestTags[1]),
 	)
 }
 

@@ -30,14 +30,15 @@ resource "dvls_entry_credential_secret" "example" {
 ### Required
 
 - `name` (String) The name of the entry.
-- `vault_id` (String) The ID of the vault.
 
 ### Optional
 
 - `description` (String) The description of the entry.
 - `folder` (String) The folder path where the entry is created.
 - `secret` (String, Sensitive) The entry credential secret.
-- `tags` (List of String) A list of tags to add to the entry.
+- `tags` (Set of String) A list of tags to add to the entry.
+- `vault_id` (String) The ID of the vault. Exactly one of `vault_id` or `vault_name` must be set.
+- `vault_name` (String) The name of the vault. Exactly one of `vault_id` or `vault_name` must be set.
 
 ### Read-Only
 

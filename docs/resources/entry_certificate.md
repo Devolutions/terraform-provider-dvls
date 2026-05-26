@@ -53,7 +53,6 @@ resource "dvls_entry_certificate" "file" {
 
 - `expiration` (String) Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)
 - `name` (String) Certificate name
-- `vault_id` (String) Vault ID
 
 ### Optional
 
@@ -61,8 +60,10 @@ resource "dvls_entry_certificate" "file" {
 - `file` (Attributes, Sensitive) Certificate file. Either file or url must be specified. (see [below for nested schema](#nestedatt--file))
 - `folder` (String) Certificate folder path
 - `password` (String, Sensitive) Certificate password
-- `tags` (List of String) Certificate tags
+- `tags` (Set of String) Certificate tags
 - `url` (Attributes) Certificate url. Either file or url must be specified. (see [below for nested schema](#nestedatt--url))
+- `vault_id` (String) The ID of the vault. Exactly one of `vault_id` or `vault_name` must be set.
+- `vault_name` (String) The name of the vault. Exactly one of `vault_id` or `vault_name` must be set.
 
 ### Read-Only
 

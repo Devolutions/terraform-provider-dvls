@@ -51,4 +51,4 @@ ephemeral "dvls_entry_credential_connection_string" "by_name_in_folder" {
 
 - `connection_string` (String, Sensitive) The entry credential connection string.
 - `description` (String) The description of the entry.
-- `tags` (List of String) A list of tags added to the entry.
+- `tags` (Set of String) A list of tags added to the entry.

@@ -51,5 +51,5 @@ data "dvls_entry_credential_azure_service_principal" "by_name_in_folder" {
 - `client_id` (String) The entry credential client ID.
 - `client_secret` (String, Sensitive) The entry credential client secret.
 - `description` (String) The description of the entry.
-- `tags` (List of String) A list of tags added to the entry.
+- `tags` (Set of String) A list of tags added to the entry.
 - `tenant_id` (String) The entry credential tenant ID.

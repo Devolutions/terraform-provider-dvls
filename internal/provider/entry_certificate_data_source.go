@@ -34,7 +34,7 @@ type EntryCertificateDataSourceModel struct {
 	Folder      types.String      `tfsdk:"folder"`
 	Description types.String      `tfsdk:"description"`
 	Expiration  timetypes.RFC3339 `tfsdk:"expiration"`
-	Tags        []types.String    `tfsdk:"tags"`
+	Tags        types.Set         `tfsdk:"tags"`
 
 	// Document
 	Password types.String `tfsdk:"password"`
@@ -107,7 +107,7 @@ func (d *EntryCertificateDataSource) Schema(ctx context.Context, req datasource.
 				Description: "Certificate expiration date, in RFC3339 format (e.g. 2022-12-31T23:59:59-05:00)",
 				Computed:    true,
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				ElementType: types.StringType,
 				Description: "Certificate tags",
 				Computed:    true,

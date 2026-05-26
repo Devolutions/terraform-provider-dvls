@@ -13,7 +13,6 @@ func TestAccEntryCredentialSSHKeyEphemeralResource_byName(t *testing.T) {
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_sshkey_eph_byname", testAccEphFolder),
 			{Config: testAccEntryCredentialSSHKeyEphemeralConfig("tf_test_sshkey_eph_byname", "tf_test_sshkey_eph_byname", "")},
 			{
 				Config: testAccEntryCredentialSSHKeyEphemeralConfig("tf_test_sshkey_eph_byname", "tf_test_sshkey_eph_byname", "name"),
@@ -30,7 +29,6 @@ func TestAccEntryCredentialSSHKeyEphemeralResource_byId(t *testing.T) {
 		TerraformVersionChecks:   testAccEphemeralTerraformVersionCheck,
 		CheckDestroy:             testAccCheckEntryCredentialDestroy,
 		Steps: []resource.TestStep{
-			testAccVaultWithFoldersStep("tf_test_sshkey_eph_byid", testAccEphFolder),
 			{
 				Config: testAccEntryCredentialSSHKeyEphemeralConfig("tf_test_sshkey_eph_byid", "tf_test_sshkey_eph_byid", "id"),
 				Check:  testAccEntryCredentialSSHKeyEphemeralCheck(),
@@ -45,11 +43,11 @@ func testAccEntryCredentialSSHKeyEphemeralCheck() resource.TestCheckFunc {
 		resource.TestCheckResourceAttr("echo.test", "data.password", "testpassword"),
 		resource.TestCheckResourceAttr("echo.test", "data.passphrase", "testpassphrase"),
 		resource.TestCheckResourceAttrSet("echo.test", "data.private_key_data"),
-		resource.TestCheckResourceAttr("echo.test", "data.description", testAccEphDescription),
-		resource.TestCheckResourceAttr("echo.test", "data.folder", testAccEphFolder),
+		resource.TestCheckResourceAttr("echo.test", "data.description", testAccTestDescription),
+		resource.TestCheckResourceAttr("echo.test", "data.folder", testAccTestFolder),
 		resource.TestCheckResourceAttr("echo.test", "data.tags.#", "2"),
-		resource.TestCheckResourceAttr("echo.test", "data.tags.0", testAccEphTags[0]),
-		resource.TestCheckResourceAttr("echo.test", "data.tags.1", testAccEphTags[1]),
+		resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", testAccTestTags[0]),
+		resource.TestCheckTypeSetElemAttr("echo.test", "data.tags.*", testAccTestTags[1]),
 	)
 }
 

@@ -16,6 +16,8 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &EntryCredentialSSHKeyResource{}
 var _ resource.ResourceWithImportState = &EntryCredentialSSHKeyResource{}
+var _ resource.ResourceWithConfigValidators = &EntryCredentialSSHKeyResource{}
+var _ resource.ResourceWithUpgradeState = &EntryCredentialSSHKeyResource{}
 
 func NewEntryCredentialSSHKeyResource() resource.Resource {
 	return &EntryCredentialSSHKeyResource{}
@@ -28,12 +30,13 @@ type EntryCredentialSSHKeyResource struct {
 
 // EntryCredentialSSHKeyResourceModel describes the resource data model.
 type EntryCredentialSSHKeyResourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	VaultName   types.String `tfsdk:"vault_name"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	Username       types.String `tfsdk:"username"`
@@ -49,6 +52,7 @@ func (r *EntryCredentialSSHKeyResource) Metadata(ctx context.Context, req resour
 
 func (r *EntryCredentialSSHKeyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:     1,
 		Description: "A DVLS SSH Key Credential Entry",
 
 		Attributes: map[string]schema.Attribute{
@@ -57,11 +61,8 @@ func (r *EntryCredentialSSHKeyResource) Schema(ctx context.Context, req resource
 				Computed:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
-			"vault_id": schema.StringAttribute{
-				Description:   "The ID of the vault.",
-				Required:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
-			},
+			"vault_id":   vaultIDAttribute(),
+			"vault_name": vaultNameAttribute(),
 			"name": schema.StringAttribute{
 				Description: "The name of the entry.",
 				Required:    true,
@@ -74,10 +75,11 @@ func (r *EntryCredentialSSHKeyResource) Schema(ctx context.Context, req resource
 				Description: "The description of the entry.",
 				Optional:    true,
 			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags to add to the entry.",
-				Optional:    true,
+			"tags": schema.SetAttribute{
+				ElementType:   types.StringType,
+				Description:   "A list of tags to add to the entry.",
+				Optional:      true,
+				PlanModifiers: []planmodifier.Set{emptyTagsToNull()},
 			},
 			"username": schema.StringAttribute{
 				Description: "The entry credential username.",
@@ -104,6 +106,10 @@ func (r *EntryCredentialSSHKeyResource) Schema(ctx context.Context, req resource
 			},
 		},
 	}
+}
+
+func (r *EntryCredentialSSHKeyResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return entryVaultRefConfigValidators()
 }
 
 func (r *EntryCredentialSSHKeyResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -133,6 +139,13 @@ func (r *EntryCredentialSSHKeyResource) Create(ctx context.Context, req resource
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	vaultId, diags := resolveVaultId(ctx, r.client, plan.VaultId, plan.VaultName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.VaultId = types.StringValue(vaultId)
 
 	entryCredentialSSHKey := newEntryCredentialSSHKeyFromResourceModel(plan)
 
@@ -241,4 +254,61 @@ func (r *EntryCredentialSSHKeyResource) ImportState(ctx context.Context, req res
 
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
+}
+
+func (r *EntryCredentialSSHKeyResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"id":               schema.StringAttribute{Computed: true},
+					"vault_id":         schema.StringAttribute{Required: true},
+					"name":             schema.StringAttribute{Required: true},
+					"folder":           schema.StringAttribute{Optional: true},
+					"description":      schema.StringAttribute{Optional: true},
+					"tags":             schema.ListAttribute{ElementType: types.StringType, Optional: true},
+					"username":         schema.StringAttribute{Optional: true},
+					"password":         schema.StringAttribute{Optional: true, Sensitive: true},
+					"passphrase":       schema.StringAttribute{Optional: true, Sensitive: true},
+					"private_key_data": schema.StringAttribute{Optional: true, Sensitive: true},
+					"public_key":       schema.StringAttribute{Optional: true},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				type v0Model struct {
+					Id             types.String   `tfsdk:"id"`
+					VaultId        types.String   `tfsdk:"vault_id"`
+					Name           types.String   `tfsdk:"name"`
+					Folder         types.String   `tfsdk:"folder"`
+					Description    types.String   `tfsdk:"description"`
+					Tags           []types.String `tfsdk:"tags"`
+					Username       types.String   `tfsdk:"username"`
+					Password       types.String   `tfsdk:"password"`
+					Passphrase     types.String   `tfsdk:"passphrase"`
+					PrivateKeyData types.String   `tfsdk:"private_key_data"`
+					PublicKey      types.String   `tfsdk:"public_key"`
+				}
+
+				var prior v0Model
+				resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				upgraded := EntryCredentialSSHKeyResourceModel{
+					Id:             prior.Id,
+					VaultId:        prior.VaultId,
+					Name:           prior.Name,
+					Folder:         prior.Folder,
+					Description:    prior.Description,
+					Tags:           tagsListToSet(prior.Tags),
+					Username:       prior.Username,
+					Password:       prior.Password,
+					Passphrase:     prior.Passphrase,
+					PrivateKeyData: prior.PrivateKeyData,
+					PublicKey:      prior.PublicKey,
+				}
+				resp.Diagnostics.Append(resp.State.Set(ctx, upgraded)...)
+			},
+		},
+	}
 }

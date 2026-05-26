@@ -16,6 +16,8 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &EntryCredentialSecretResource{}
 var _ resource.ResourceWithImportState = &EntryCredentialSecretResource{}
+var _ resource.ResourceWithConfigValidators = &EntryCredentialSecretResource{}
+var _ resource.ResourceWithUpgradeState = &EntryCredentialSecretResource{}
 
 func NewEntryCredentialSecretResource() resource.Resource {
 	return &EntryCredentialSecretResource{}
@@ -28,12 +30,13 @@ type EntryCredentialSecretResource struct {
 
 // EntryCredentialSecretResourceModel describes the resource data model.
 type EntryCredentialSecretResourceModel struct {
-	Id          types.String   `tfsdk:"id"`
-	VaultId     types.String   `tfsdk:"vault_id"`
-	Name        types.String   `tfsdk:"name"`
-	Folder      types.String   `tfsdk:"folder"`
-	Description types.String   `tfsdk:"description"`
-	Tags        []types.String `tfsdk:"tags"`
+	Id          types.String `tfsdk:"id"`
+	VaultId     types.String `tfsdk:"vault_id"`
+	VaultName   types.String `tfsdk:"vault_name"`
+	Name        types.String `tfsdk:"name"`
+	Folder      types.String `tfsdk:"folder"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
 	Secret types.String `tfsdk:"secret"`
@@ -45,6 +48,7 @@ func (r *EntryCredentialSecretResource) Metadata(ctx context.Context, req resour
 
 func (r *EntryCredentialSecretResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:     1,
 		Description: "A DVLS Secret Credential Entry",
 
 		Attributes: map[string]schema.Attribute{
@@ -53,11 +57,8 @@ func (r *EntryCredentialSecretResource) Schema(ctx context.Context, req resource
 				Computed:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
-			"vault_id": schema.StringAttribute{
-				Description:   "The ID of the vault.",
-				Required:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
-			},
+			"vault_id":   vaultIDAttribute(),
+			"vault_name": vaultNameAttribute(),
 			"name": schema.StringAttribute{
 				Description: "The name of the entry.",
 				Required:    true,
@@ -70,10 +71,11 @@ func (r *EntryCredentialSecretResource) Schema(ctx context.Context, req resource
 				Description: "The description of the entry.",
 				Optional:    true,
 			},
-			"tags": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "A list of tags to add to the entry.",
-				Optional:    true,
+			"tags": schema.SetAttribute{
+				ElementType:   types.StringType,
+				Description:   "A list of tags to add to the entry.",
+				Optional:      true,
+				PlanModifiers: []planmodifier.Set{emptyTagsToNull()},
 			},
 			"secret": schema.StringAttribute{
 				Description: "The entry credential secret.",
@@ -82,6 +84,10 @@ func (r *EntryCredentialSecretResource) Schema(ctx context.Context, req resource
 			},
 		},
 	}
+}
+
+func (r *EntryCredentialSecretResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return entryVaultRefConfigValidators()
 }
 
 func (r *EntryCredentialSecretResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -111,6 +117,13 @@ func (r *EntryCredentialSecretResource) Create(ctx context.Context, req resource
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	vaultId, diags := resolveVaultId(ctx, r.client, plan.VaultId, plan.VaultName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.VaultId = types.StringValue(vaultId)
 
 	entryCredentialSecret := newEntryCredentialSecretFromResourceModel(plan)
 
@@ -219,4 +232,49 @@ func (r *EntryCredentialSecretResource) ImportState(ctx context.Context, req res
 
 	resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
+}
+
+func (r *EntryCredentialSecretResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"id":          schema.StringAttribute{Computed: true},
+					"vault_id":    schema.StringAttribute{Required: true},
+					"name":        schema.StringAttribute{Required: true},
+					"folder":      schema.StringAttribute{Optional: true},
+					"description": schema.StringAttribute{Optional: true},
+					"tags":        schema.ListAttribute{ElementType: types.StringType, Optional: true},
+					"secret":      schema.StringAttribute{Optional: true, Sensitive: true},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				type v0Model struct {
+					Id          types.String   `tfsdk:"id"`
+					VaultId     types.String   `tfsdk:"vault_id"`
+					Name        types.String   `tfsdk:"name"`
+					Folder      types.String   `tfsdk:"folder"`
+					Description types.String   `tfsdk:"description"`
+					Tags        []types.String `tfsdk:"tags"`
+					Secret      types.String   `tfsdk:"secret"`
+				}
+
+				var prior v0Model
+				resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				upgraded := EntryCredentialSecretResourceModel{
+					Id:          prior.Id,
+					VaultId:     prior.VaultId,
+					Name:        prior.Name,
+					Folder:      prior.Folder,
+					Description: prior.Description,
+					Tags:        tagsListToSet(prior.Tags),
+					Secret:      prior.Secret,
+				}
+				resp.Diagnostics.Append(resp.State.Set(ctx, upgraded)...)
+			},
+		},
+	}
 }

@@ -1,11 +1,7 @@
 package provider
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 	"testing"
 
@@ -45,15 +41,15 @@ resource "echo" "test" {}
 `, refExpr)
 }
 
-// Shared literals used by every ephemeral acceptance test. Centralized so
-// the HCL config and the TestCheckResourceAttr assertions reference one
-// source of truth.
+// Shared literals used by every entry acceptance test (resource, data
+// source, and ephemeral). Centralized so the HCL config and the
+// TestCheckResourceAttr assertions reference one source of truth.
 const (
-	testAccEphFolder      = "tf_test_folder"
-	testAccEphDescription = "test entry for ephemeral resource"
+	testAccTestFolder      = "tf_test_folder"
+	testAccTestDescription = "test entry for ephemeral resource"
 )
 
-var testAccEphTags = []string{"acceptance", "tf-test"}
+var testAccTestTags = []string{"acceptance", "tf-test"}
 
 // ephemeralLookupBlock builds an ephemeral { ... } HCL block that looks up
 // `resourceType.test` by either "name" or "id" (whichever lookupField is).
@@ -66,6 +62,98 @@ ephemeral %[1]q "test" {
   %[2]s = %[1]s.test.%[2]s
 }
 `, resourceType, lookupField)
+}
+
+// testAccEntryCredentialDataSourceCheck asserts that the data source mirrors
+// the underlying credential resource on common attributes plus the given
+// subtype-specific fields.
+func testAccEntryCredentialDataSourceCheck(resourceType string, fields ...string) resource.TestCheckFunc {
+	dataAddr := "data." + resourceType + ".test"
+	resAddr := resourceType + ".test"
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttrPair(dataAddr, "id", resAddr, "id"),
+		resource.TestCheckResourceAttrPair(dataAddr, "vault_id", resAddr, "vault_id"),
+		resource.TestCheckResourceAttrPair(dataAddr, "name", resAddr, "name"),
+		resource.TestCheckResourceAttrPair(dataAddr, "description", resAddr, "description"),
+		resource.TestCheckResourceAttrPair(dataAddr, "folder", resAddr, "folder"),
+		resource.TestCheckResourceAttrPair(dataAddr, "tags.#", resAddr, "tags.#"),
+	}
+	for _, f := range fields {
+		checks = append(checks, resource.TestCheckResourceAttrPair(dataAddr, f, resAddr, f))
+	}
+	return resource.ComposeAggregateTestCheckFunc(checks...)
+}
+
+// testAccEntryCredentialResourceConfig builds the HCL for a credential
+// resource acceptance step. Both folders (`tf_test_folder` and
+// `tf_test_folder_updated`) are declared so the Update step can switch
+// between them. `fields` is the subtype-specific HCL fragment.
+func testAccEntryCredentialResourceConfig(resourceType, vaultName, entryName, description, folder, fields string) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "dvls_vault" "test" {
+  name = %[2]q
+}
+
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder"
+}
+
+resource "dvls_entry_folder" "updated" {
+  vault_id = dvls_vault.test.id
+  name     = "tf_test_folder_updated"
+}
+
+resource %[3]q "test" {
+  vault_id = dvls_vault.test.id
+  name = %[4]q
+  description = %[5]q
+  folder = %[6]q
+  tags = [%[7]q, %[8]q]
+%[9]s
+
+  depends_on = [dvls_entry_folder.default, dvls_entry_folder.updated]
+}
+`, testAccProviderConfig(), vaultName, resourceType, entryName,
+		description, folder, testAccTestTags[0], testAccTestTags[1], fields)
+}
+
+// testAccEntryCredentialDataSourceConfig builds the HCL for a credential
+// data source acceptance step: provider + vault + folder + credential
+// resource + data source. `lookupField` is "name" or "id".
+func testAccEntryCredentialDataSourceConfig(resourceType, vaultName, entryName, fields, lookupField string) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "dvls_vault" "test" {
+  name = %[2]q
+}
+
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = %[6]q
+}
+
+resource %[3]q "test" {
+  vault_id = dvls_vault.test.id
+  name = %[4]q
+  description = %[5]q
+  folder = %[6]q
+  tags = [%[7]q, %[8]q]
+%[9]s
+
+  depends_on = [dvls_entry_folder.default]
+}
+
+data %[3]q "test" {
+  vault_id = dvls_vault.test.id
+  %[10]s = %[3]s.test.%[10]s
+}
+`, testAccProviderConfig(), vaultName, resourceType, entryName,
+		testAccTestDescription, testAccTestFolder, testAccTestTags[0], testAccTestTags[1],
+		fields, lookupField)
 }
 
 // testAccEntryCredentialEphemeralConfig builds the HCL for a credential
@@ -89,6 +177,11 @@ resource "dvls_vault" "test" {
   name = %[2]q
 }
 
+resource "dvls_entry_folder" "default" {
+  vault_id = dvls_vault.test.id
+  name     = %[6]q
+}
+
 resource %[3]q "test" {
   vault_id = dvls_vault.test.id
   name = %[4]q
@@ -96,13 +189,15 @@ resource %[3]q "test" {
   folder = %[6]q
   tags = [%[7]q, %[8]q]
 %[9]s
+
+  depends_on = [dvls_entry_folder.default]
 }
 
 %[10]s
 
 %[11]s
 `, testAccProviderConfig(), vaultName, resourceType, entryName,
-		testAccEphDescription, testAccEphFolder, testAccEphTags[0], testAccEphTags[1],
+		testAccTestDescription, testAccTestFolder, testAccTestTags[0], testAccTestTags[1],
 		fields, ephemeralBlock, echoConfig)
 }
 
@@ -144,65 +239,7 @@ provider "dvls" {
 `, os.Getenv("TEST_DVLS_BASE_URI"))
 }
 
-// testAccCreateFolderInVault posts a Folder entry to a vault. DVLS rejects
-// credential creation with status 400 when its `path` references a folder
-// that does not exist; tests that exercise the folder attribute must
-// pre-create the folder via this helper.
-func testAccCreateFolderInVault(vaultId, folderName string) error {
-	client, err := getTestAccClient()
-	if err != nil {
-		return err
-	}
-
-	body, err := json.Marshal(map[string]any{
-		"name":    folderName,
-		"type":    "Folder",
-		"subType": "Folder",
-		"data":    map[string]any{},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to marshal folder body: %w", err)
-	}
-
-	reqURL, err := url.JoinPath(os.Getenv("TEST_DVLS_BASE_URI"), "/api/v1/vault/", vaultId, "/entry")
-	if err != nil {
-		return fmt.Errorf("failed to build folder url: %w", err)
-	}
-
-	if _, err := client.Request(reqURL, http.MethodPost, bytes.NewBuffer(body)); err != nil {
-		return fmt.Errorf("failed to create folder %q in vault %s: %w", folderName, vaultId, err)
-	}
-	return nil
-}
-
-// testAccVaultWithFoldersStep returns a TestStep that creates dvls_vault.test
-// and pre-creates the given folders inside it via the DVLS API. Prepend it to
-// a test's Steps when subsequent steps set `folder` on a credential entry.
-func testAccVaultWithFoldersStep(vaultName string, folderNames ...string) resource.TestStep {
-	return resource.TestStep{
-		Config: fmt.Sprintf(`
-%s
-
-resource "dvls_vault" "test" {
-  name = %q
-}
-`, testAccProviderConfig(), vaultName),
-		Check: func(s *terraform.State) error {
-			rs, ok := s.RootModule().Resources["dvls_vault.test"]
-			if !ok {
-				return fmt.Errorf("dvls_vault.test not found in state")
-			}
-			for _, name := range folderNames {
-				if err := testAccCreateFolderInVault(rs.Primary.ID, name); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	}
-}
-
-func testAccEntryCredentialImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
+func testAccEntryImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {

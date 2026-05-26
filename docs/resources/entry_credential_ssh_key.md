@@ -34,7 +34,6 @@ resource "dvls_entry_credential_ssh_key" "example" {
 ### Required
 
 - `name` (String) The name of the entry.
-- `vault_id` (String) The ID of the vault.
 
 ### Optional
 
@@ -44,8 +43,10 @@ resource "dvls_entry_credential_ssh_key" "example" {
 - `password` (String, Sensitive) The entry credential password.
 - `private_key_data` (String, Sensitive) The entry credential private key.
 - `public_key` (String) The entry credential public key.
-- `tags` (List of String) A list of tags to add to the entry.
+- `tags` (Set of String) A list of tags to add to the entry.
 - `username` (String) The entry credential username.
+- `vault_id` (String) The ID of the vault. Exactly one of `vault_id` or `vault_name` must be set.
+- `vault_name` (String) The name of the vault. Exactly one of `vault_id` or `vault_name` must be set.
 
 ### Read-Only
 
