@@ -15,7 +15,7 @@ func TestAccAdministrativeRoleDataSource(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccProviderConfig() + testAccAdministrativeRoleDataSourceBlock("by_id", fmt.Sprintf("id = %q", dvls.BuiltinRoleVaultUserId)),
+				Config: testAccProviderConfig() + testAccDataSourceBlock("dvls_administrative_role", "by_id", fmt.Sprintf("id = %q", dvls.BuiltinRoleVaultUserId)),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.dvls_administrative_role.by_id", "id", dvls.BuiltinRoleVaultUserId),
 					resource.TestCheckResourceAttrSet("data.dvls_administrative_role.by_id", "name"),
@@ -25,8 +25,8 @@ func TestAccAdministrativeRoleDataSource(t *testing.T) {
 			},
 			{
 				Config: testAccProviderConfig() +
-					testAccAdministrativeRoleDataSourceBlock("by_id", fmt.Sprintf("id = %q", dvls.BuiltinRoleVaultUserId)) +
-					testAccAdministrativeRoleDataSourceBlock("by_name", "name = data.dvls_administrative_role.by_id.name"),
+					testAccDataSourceBlock("dvls_administrative_role", "by_id", fmt.Sprintf("id = %q", dvls.BuiltinRoleVaultUserId)) +
+					testAccDataSourceBlock("dvls_administrative_role", "by_name", "name = data.dvls_administrative_role.by_id.name"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.dvls_administrative_role.by_name", "id", dvls.BuiltinRoleVaultUserId),
 					resource.TestCheckResourceAttrPair("data.dvls_administrative_role.by_name", "name", "data.dvls_administrative_role.by_id", "name"),

@@ -137,6 +137,7 @@ func (p *DvlsProvider) Resources(ctx context.Context) []func() resource.Resource
 func (p *DvlsProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewAdministrativeRoleDataSource,
+		NewApplicationDataSource,
 		NewEntryCertificateDataSource,
 		NewEntryCredentialApiKeyDataSource,
 		NewEntryCredentialAzureServicePrincipalDataSource,
@@ -146,6 +147,8 @@ func (p *DvlsProvider) DataSources(ctx context.Context) []func() datasource.Data
 		NewEntryCredentialUsernamePasswordDataSource,
 		NewEntryHostDataSource,
 		NewEntryWebsiteDataSource,
+		NewUserDataSource,
+		NewUserGroupDataSource,
 		NewVaultDataSource,
 	}
 }
