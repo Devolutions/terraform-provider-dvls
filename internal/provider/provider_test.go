@@ -231,6 +231,66 @@ func testAccPreCheck(t *testing.T) {
 	t.Setenv("DVLS_APP_SECRET", os.Getenv("TEST_DVLS_APP_SECRET"))
 }
 
+// testAccPreCheckRoleAssignment runs before resource.Test because the test
+// config needs a live principal id. It mirrors the TF_ACC gate of
+// resource.Test, then skips when the server does not expose the
+// administrative role endpoints (DVLS 2026.3+).
+func testAccPreCheckRoleAssignment(t *testing.T) {
+	t.Helper()
+
+	client := testAccLiveClient(t)
+
+	_, err := client.AdministrativeRoles.List()
+	if dvls.IsNotFound(err) {
+		t.Skip("administrative roles require DVLS 2026.3 or later")
+	}
+	if err != nil {
+		t.Fatalf("unable to list administrative roles: %s", err)
+	}
+}
+
+// testAccLiveClient mirrors the TF_ACC gate of resource.Test for tests that
+// must query the server before building their config, and returns a client.
+func testAccLiveClient(t *testing.T) *dvls.Client {
+	t.Helper()
+
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+
+	testAccPreCheck(t)
+
+	client, err := getTestAccClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return client
+}
+
+// testAccFindAssigneeId returns a principal id usable in permission tests:
+// TEST_DVLS_ASSIGNEE_ID when set, otherwise the first member of the built-in
+// Administrator role (the test application itself is one of them).
+func testAccFindAssigneeId(t *testing.T) string {
+	t.Helper()
+
+	if assigneeId := os.Getenv("TEST_DVLS_ASSIGNEE_ID"); assigneeId != "" {
+		return assigneeId
+	}
+
+	client := testAccLiveClient(t)
+
+	members, err := client.AdministrativeRoleAssignments.GetMembers(dvls.BuiltinRoleBuiltinAdministratorId, dvls.AdministrativeRoleScopeGlobal, "")
+	if err != nil {
+		t.Fatalf("unable to list administrator members: %s", err)
+	}
+	if len(members) == 0 {
+		t.Fatal("no administrator member found, set TEST_DVLS_ASSIGNEE_ID")
+	}
+
+	return members[0].AssigneeId
+}
+
 func testAccProviderConfig() string {
 	return fmt.Sprintf(`
 provider "dvls" {
@@ -274,6 +334,37 @@ func testAccCheckVaultDestroy(s *terraform.State) error {
 	return nil
 }
 
+func testAccCheckAdministrativeRoleAssignmentDestroy(s *terraform.State) error {
+	client, err := getTestAccClient()
+	if err != nil {
+		return err
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "dvls_administrative_role_assignment" {
+			continue
+		}
+
+		scopeType, err := lookupMapValue(administrativeRoleScopeTypes, rs.Primary.Attributes["scope_type"])
+		if err != nil {
+			return err
+		}
+
+		members, err := client.AdministrativeRoleAssignments.GetMembers(rs.Primary.Attributes["role_id"], scopeType, rs.Primary.Attributes["scope_id"])
+		if err != nil {
+			return fmt.Errorf("unexpected error checking role assignment %s: %s", rs.Primary.ID, err)
+		}
+
+		for _, member := range members {
+			if member.Id == rs.Primary.ID {
+				return fmt.Errorf("role assignment %s still exists", rs.Primary.ID)
+			}
+		}
+	}
+
+	return nil
+}
+
 var credentialResourceTypes = map[string]bool{
 	"dvls_entry_credential_username_password":       true,
 	"dvls_entry_credential_api_key":                 true,
@@ -308,4 +399,12 @@ func testAccCheckEntryCredentialDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func testAccDataSourceBlock(dataSourceType, name, lookup string) string {
+	return fmt.Sprintf(`
+data %q %q {
+  %s
+}
+`, dataSourceType, name, lookup)
 }

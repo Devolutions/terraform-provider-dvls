@@ -120,6 +120,7 @@ func (p *DvlsProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 func (p *DvlsProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewAdministrativeRoleAssignmentResource,
 		NewEntryCertificateResource,
 		NewEntryCredentialApiKeyResource,
 		NewEntryCredentialAzureServicePrincipalResource,
@@ -128,12 +129,14 @@ func (p *DvlsProvider) Resources(ctx context.Context) []func() resource.Resource
 		NewEntryCredentialSSHKeyResource,
 		NewEntryCredentialUsernamePasswordResource,
 		NewEntryFolderResource,
+		NewEntryPermissionsResource,
 		NewVaultResource,
 	}
 }
 
 func (p *DvlsProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		NewAdministrativeRoleDataSource,
 		NewEntryCertificateDataSource,
 		NewEntryCredentialApiKeyDataSource,
 		NewEntryCredentialAzureServicePrincipalDataSource,
