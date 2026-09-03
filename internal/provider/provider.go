@@ -66,6 +66,7 @@ func (p *DvlsProvider) Schema(ctx context.Context, req provider.SchemaRequest, r
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.MatchRoot("app_id"), path.MatchRoot("app_secret")),
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 		},
@@ -90,6 +91,13 @@ func (p *DvlsProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	var err error
 
 	switch {
+	case data.ApiKey.IsUnknown():
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_key"),
+			"unable to set up dvls client",
+			"'api_key' is an unknown value at configuration time. Set it to a known value, for example by using a variable or an input that is available during the plan.",
+		)
+		return
 	case !data.ApiKey.IsNull():
 		dvlsClient, err = dvls.NewClientWithApiKey(data.ApiKey.ValueString(), baseUri)
 	case appId != "" && appSecret != "":
