@@ -37,7 +37,7 @@ func (e *EntryCertificateEphemeralResource) Schema(_ context.Context, _ ephemera
 			"id": schema.StringAttribute{
 				Description: "Certificate ID",
 				Required:    true,
-				Validators:  []validator.String{entryIdValidator{}},
+				Validators:  []validator.String{uuidValidator{"entry id"}},
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",

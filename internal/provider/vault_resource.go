@@ -3,8 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"maps"
-	"slices"
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -68,21 +66,21 @@ func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("default"),
-				Validators:  []validator.String{stringvalidator.OneOf(slices.Collect(maps.Values(vaultVisibilities))...)},
+				Validators:  []validator.String{stringvalidator.OneOf(mapValues(vaultVisibilities)...)},
 			},
 			"security_level": schema.StringAttribute{
 				Description: fmt.Sprintf("Vault security level. Must be one of the following: %s", listMapValues(vaultSecurityLevels)),
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("standard"),
-				Validators:  []validator.String{stringvalidator.OneOf(slices.Collect(maps.Values(vaultSecurityLevels))...)},
+				Validators:  []validator.String{stringvalidator.OneOf(mapValues(vaultSecurityLevels)...)},
 			},
 			"content_type": schema.StringAttribute{
 				Description: fmt.Sprintf("Vault content type. Must be one of: %s", listMapValues(vaultContentTypes)),
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("everything"),
-				Validators:  []validator.String{stringvalidator.OneOf(slices.Collect(maps.Values(vaultContentTypes))...)},
+				Validators:  []validator.String{stringvalidator.OneOf(mapValues(vaultContentTypes)...)},
 			},
 		},
 	}
