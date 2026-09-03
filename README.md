@@ -91,6 +91,8 @@ provider "dvls" {
   base_uri   = "https://your-dvls-instance.com/"
   app_id     = "your-app-id"
   app_secret = "your-app-secret"
+  # or, instead of app_id / app_secret:
+  # api_key  = "your-api-key"
 }
 
 data "dvls_entry_website" "example" {
