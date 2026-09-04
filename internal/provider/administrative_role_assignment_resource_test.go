@@ -63,7 +63,7 @@ func TestAccAdministrativeRoleAssignmentResource_byRoleName(t *testing.T) {
 					"tf_test_role_assignment_name",
 					"role_name = data.dvls_administrative_role.vault_user.name",
 					assigneeId,
-					testAccAdministrativeRoleDataSourceBlock("vault_user", fmt.Sprintf("id = %q", dvls.BuiltinRoleVaultUserId)),
+					testAccDataSourceBlock("dvls_administrative_role", "vault_user", fmt.Sprintf("id = %q", dvls.BuiltinRoleVaultUserId)),
 				),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("dvls_administrative_role_assignment.test", "role_id", dvls.BuiltinRoleVaultUserId),

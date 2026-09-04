@@ -401,10 +401,26 @@ func testAccCheckEntryCredentialDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccAdministrativeRoleDataSourceBlock(name, lookup string) string {
+// testAccFirstOf lists a server-side collection and returns its first item,
+// skipping the test when the collection is empty.
+func testAccFirstOf[T any](t *testing.T, kind string, list func() ([]T, error)) T {
+	t.Helper()
+
+	items, err := list()
+	if err != nil {
+		t.Fatalf("unable to list %ss: %s", kind, err)
+	}
+	if len(items) == 0 {
+		t.Skipf("no %s available on the server", kind)
+	}
+
+	return items[0]
+}
+
+func testAccDataSourceBlock(dataSourceType, name, lookup string) string {
 	return fmt.Sprintf(`
-data "dvls_administrative_role" %q {
+data %q %q {
   %s
 }
-`, name, lookup)
+`, dataSourceType, name, lookup)
 }
