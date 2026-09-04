@@ -401,10 +401,10 @@ func testAccCheckEntryCredentialDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccDataSourceBlock(dataSourceType, name, lookup string) string {
+func testAccAdministrativeRoleDataSourceBlock(name, lookup string) string {
 	return fmt.Sprintf(`
-data %q %q {
+data "dvls_administrative_role" %q {
   %s
 }
-`, dataSourceType, name, lookup)
+`, name, lookup)
 }
