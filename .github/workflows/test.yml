@@ -65,6 +65,7 @@ jobs:
         env:
           TEST_DVLS_APP_ID: ${{ secrets.TEST_DVLS_APP_ID }}
           TEST_DVLS_APP_SECRET: ${{ secrets.TEST_DVLS_APP_SECRET }}
+          TEST_DVLS_API_KEY: ${{ secrets.TEST_DVLS_API_KEY }}
           TEST_DVLS_BASE_URI: ${{ secrets.TEST_DVLS_BASE_URI }}
           TF_ACC: "1"
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tf-plugin-cache

@@ -84,7 +84,7 @@ func (d *EntryCertificateDataSource) Schema(ctx context.Context, req datasource.
 			"id": schema.StringAttribute{
 				Description: "Certificate ID",
 				Required:    true,
-				Validators:  []validator.String{entryIdValidator{}},
+				Validators:  []validator.String{uuidValidator{"entry id"}},
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",

@@ -55,12 +55,12 @@ func (d *EntryCredentialAzureServicePrincipalDataSource) Schema(ctx context.Cont
 				Description: "The ID of the entry.",
 				Optional:    true,
 				Computed:    true,
-				Validators:  []validator.String{entryIdValidator{}},
+				Validators:  []validator.String{uuidValidator{"entry id"}},
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "The ID of the vault.",
 				Required:    true,
-				Validators:  []validator.String{vaultIdValidator{}},
+				Validators:  []validator.String{uuidValidator{"vault id"}},
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the entry.",

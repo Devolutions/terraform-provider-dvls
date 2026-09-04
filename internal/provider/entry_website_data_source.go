@@ -51,7 +51,7 @@ func (d *EntryWebsiteDataSource) Schema(ctx context.Context, req datasource.Sche
 			"id": schema.StringAttribute{
 				Description: "User Credential ID",
 				Required:    true,
-				Validators:  []validator.String{entryIdValidator{}},
+				Validators:  []validator.String{uuidValidator{"entry id"}},
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",

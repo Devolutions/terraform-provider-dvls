@@ -1,11 +1,6 @@
 package provider
 
 import (
-	"fmt"
-	"maps"
-	"slices"
-	"strings"
-
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -86,21 +81,4 @@ func setVaultDataModel(vault dvls.Vault, data *VaultDataSourceModel) {
 	}
 
 	*data = model
-}
-
-func lookupMapValue[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType](lookup map[K]string, value string) (K, error) {
-	for k, v := range lookup {
-		if v == value {
-			return k, nil
-		}
-	}
-
-	var zero K
-	return zero, fmt.Errorf("value %s not found in lookup", value)
-}
-
-func listMapValues[K dvls.VaultSecurityLevel | dvls.VaultVisibility | dvls.VaultContentType](lookup map[K]string) string {
-	values := slices.Sorted(maps.Values(lookup))
-
-	return fmt.Sprintf("[%s]", strings.Join(values, ", "))
 }
