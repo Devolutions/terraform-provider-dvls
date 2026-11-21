@@ -54,7 +54,8 @@ func (d *EntryHostDataSource) Schema(ctx context.Context, req datasource.SchemaR
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",
-				Computed:    true,
+				Required:    true,
+				Validators:  []validator.String{uuidValidator{"vault id"}},
 			},
 			"name": schema.StringAttribute{
 				Description: "Host name",
@@ -119,7 +120,7 @@ func (d *EntryHostDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	entryHost, err := d.client.Entries.Host.Get(data.Id.ValueString())
+	entryHost, err := d.client.Entries.Host.Get(data.VaultId.ValueString(), data.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading Host Entry",
@@ -146,7 +147,7 @@ func (d *EntryHostDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	data.Host = types.StringValue(entryHostSensitiveData.HostDetails.Host)
 	data.Username = types.StringValue(entryHostSensitiveData.HostDetails.Username)
-	data.Password = types.StringValue(*entryHostSensitiveData.HostDetails.Password)
+	data.Password = types.StringPointerValue(entryHostSensitiveData.HostDetails.Password)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)

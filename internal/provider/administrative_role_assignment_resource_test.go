@@ -81,6 +81,49 @@ func TestAccAdministrativeRoleAssignmentResource_byRoleName(t *testing.T) {
 	})
 }
 
+// TestAccAdministrativeRoleAssignmentResource_adoptsExisting creates the
+// assignment outside Terraform first: DVLS refuses the duplicate and the
+// resource adopts the existing assignment.
+func TestAccAdministrativeRoleAssignmentResource_adoptsExisting(t *testing.T) {
+	testAccPreCheckRoleAssignment(t)
+	assigneeId := testAccFindAssigneeId(t)
+	client := testAccLiveClient(t)
+
+	vault, err := client.Vaults.New(dvls.Vault{Name: "tf_test_role_assignment_adopt"})
+	if err != nil {
+		t.Fatalf("unable to create vault: %s", err)
+	}
+	t.Cleanup(func() { _ = client.Vaults.Delete(vault.Id) })
+
+	existing, err := client.AdministrativeRoleAssignments.New(dvls.AdministrativeRoleAssignmentRequest{
+		RoleId:     dvls.BuiltinRoleVaultUserId,
+		AssigneeId: assigneeId,
+		ScopeType:  dvls.AdministrativeRoleScopeVault,
+		ScopeId:    vault.Id,
+	})
+	if err != nil {
+		t.Fatalf("unable to create role assignment: %s", err)
+	}
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckAdministrativeRoleAssignmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccProviderConfig() + fmt.Sprintf(`
+resource "dvls_administrative_role_assignment" "test" {
+  role_id     = %q
+  assignee_id = %q
+  scope_type  = "vault"
+  scope_id    = %q
+}
+`, dvls.BuiltinRoleVaultUserId, assigneeId, vault.Id),
+				Check: resource.TestCheckResourceAttr("dvls_administrative_role_assignment.test", "id", existing.Id),
+			},
+		},
+	})
+}
+
 // testAccAdministrativeRoleAssignmentResourceConfig builds provider + vault +
 // a vault-scoped role assignment. `roleRef` is the `role_id = ...` or
 // `role_name = ...` line; `extraBlocks` is appended verbatim (e.g. a data source).

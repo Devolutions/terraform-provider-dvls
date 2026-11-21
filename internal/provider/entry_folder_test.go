@@ -20,28 +20,3 @@ func TestFolderFullPath(t *testing.T) {
 		})
 	}
 }
-
-func TestFolderParentFromFullPath(t *testing.T) {
-	tests := []struct {
-		name, fullPath, child string
-		wantParent            string
-		wantOK                bool
-	}{
-		{name: "root folder, path equals name", fullPath: "X", child: "X", wantParent: "", wantOK: false},
-		{name: "nested under one parent", fullPath: `A\X`, child: "X", wantParent: "A", wantOK: true},
-		{name: "nested under two parents", fullPath: `A\B\X`, child: "X", wantParent: `A\B`, wantOK: true},
-		{name: "name-suffix collision: parent ends in name", fullPath: "AX", child: "X", wantParent: "", wantOK: false},
-		{name: "name appears inside parent path", fullPath: `X\Y`, child: "Y", wantParent: "X", wantOK: true},
-		{name: "empty path", fullPath: "", child: "X", wantParent: "", wantOK: false},
-		{name: "path is just a backslash + name", fullPath: `\X`, child: "X", wantParent: "", wantOK: true},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			gotParent, gotOK := folderParentFromFullPath(tc.fullPath, tc.child)
-			if gotParent != tc.wantParent || gotOK != tc.wantOK {
-				t.Fatalf("folderParentFromFullPath(%q, %q) = (%q, %v), want (%q, %v)",
-					tc.fullPath, tc.child, gotParent, gotOK, tc.wantParent, tc.wantOK)
-			}
-		})
-	}
-}

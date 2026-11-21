@@ -11,14 +11,14 @@ func TestAccUserDataSource(t *testing.T) {
 	client := testAccLiveClient(t)
 	user := testAccFirstOf(t, "user", client.Users.List)
 
-	testAccPrincipalDataSourceTest(t, "dvls_user", user.Id, user.Name, "authentication_type")
+	testAccPrincipalDataSourceTest(t, "dvls_user", user.Id, user.Name, "identity_provider")
 }
 
 func TestAccApplicationDataSource(t *testing.T) {
 	client := testAccLiveClient(t)
 	application := testAccFirstOf(t, "application", client.Users.ListApplications)
 
-	testAccPrincipalDataSourceTest(t, "dvls_application", application.Id, application.Name, "is_enabled")
+	testAccPrincipalDataSourceTest(t, "dvls_application", application.Id, application.AppKey, "is_enabled")
 }
 
 func TestAccUserGroupDataSource(t *testing.T) {

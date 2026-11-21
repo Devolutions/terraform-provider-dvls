@@ -56,8 +56,7 @@ func (r *EntryFolderResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"vault_id":   vaultIDAttribute(),
 			"vault_name": vaultNameAttribute(),
 			"name": schema.StringAttribute{
-				// Reject backslash so folderParentFromFullPath stays unambiguous
-				// (DVLS GET returns the folder's full path as parent + "\" + name).
+				// A backslash is the folder path separator.
 				Description: "The name of the folder. Must not contain a backslash.",
 				Required:    true,
 				Validators: []validator.String{

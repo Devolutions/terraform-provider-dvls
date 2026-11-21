@@ -234,7 +234,7 @@ func testAccPreCheck(t *testing.T) {
 // testAccPreCheckRoleAssignment runs before resource.Test because the test
 // config needs a live principal id. It mirrors the TF_ACC gate of
 // resource.Test, then skips when the server does not expose the
-// administrative role endpoints (DVLS 2026.3+).
+// administrative role endpoints.
 func testAccPreCheckRoleAssignment(t *testing.T) {
 	t.Helper()
 
@@ -242,7 +242,7 @@ func testAccPreCheckRoleAssignment(t *testing.T) {
 
 	_, err := client.AdministrativeRoles.List()
 	if dvls.IsNotFound(err) {
-		t.Skip("administrative roles require DVLS 2026.3 or later")
+		t.Skip("administrative roles are not exposed by this server")
 	}
 	if err != nil {
 		t.Fatalf("unable to list administrative roles: %s", err)
@@ -269,8 +269,8 @@ func testAccLiveClient(t *testing.T) *dvls.Client {
 }
 
 // testAccFindAssigneeId returns a principal id usable in permission tests:
-// TEST_DVLS_ASSIGNEE_ID when set, otherwise the first member of the built-in
-// Administrator role (the test application itself is one of them).
+// TEST_DVLS_ASSIGNEE_ID when set, otherwise the first holder of the built-in
+// Workspace owner role.
 func testAccFindAssigneeId(t *testing.T) string {
 	t.Helper()
 
@@ -280,15 +280,18 @@ func testAccFindAssigneeId(t *testing.T) string {
 
 	client := testAccLiveClient(t)
 
-	members, err := client.AdministrativeRoleAssignments.GetMembers(dvls.BuiltinRoleBuiltinAdministratorId, dvls.AdministrativeRoleScopeGlobal, "")
+	assignments, err := client.AdministrativeRoleAssignments.List(dvls.AdministrativeRoleAssignmentFilter{
+		RoleId:    dvls.BuiltinRoleBuiltinAdministratorId,
+		ScopeType: dvls.AdministrativeRoleScopeWorkspace,
+	})
 	if err != nil {
-		t.Fatalf("unable to list administrator members: %s", err)
+		t.Fatalf("unable to list workspace owners: %s", err)
 	}
-	if len(members) == 0 {
-		t.Fatal("no administrator member found, set TEST_DVLS_ASSIGNEE_ID")
+	if len(assignments) == 0 {
+		t.Fatal("no workspace owner found, set TEST_DVLS_ASSIGNEE_ID")
 	}
 
-	return members[0].AssigneeId
+	return assignments[0].AssigneeId
 }
 
 func testAccProviderConfig() string {
@@ -350,13 +353,21 @@ func testAccCheckAdministrativeRoleAssignmentDestroy(s *terraform.State) error {
 			return err
 		}
 
-		members, err := client.AdministrativeRoleAssignments.GetMembers(rs.Primary.Attributes["role_id"], scopeType, rs.Primary.Attributes["scope_id"])
+		assignments, err := client.AdministrativeRoleAssignments.List(dvls.AdministrativeRoleAssignmentFilter{
+			RoleId:     rs.Primary.Attributes["role_id"],
+			AssigneeId: rs.Primary.Attributes["assignee_id"],
+			ScopeType:  scopeType,
+			ScopeId:    rs.Primary.Attributes["scope_id"],
+		})
+		if isAdministrativeRoleAssignmentFilterGone(err) {
+			continue
+		}
 		if err != nil {
 			return fmt.Errorf("unexpected error checking role assignment %s: %s", rs.Primary.ID, err)
 		}
 
-		for _, member := range members {
-			if member.Id == rs.Primary.ID {
+		for _, assignment := range assignments {
+			if assignment.Id == rs.Primary.ID {
 				return fmt.Errorf("role assignment %s still exists", rs.Primary.ID)
 			}
 		}

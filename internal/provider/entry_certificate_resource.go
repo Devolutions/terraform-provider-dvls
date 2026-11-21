@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
@@ -221,7 +220,7 @@ func (r *EntryCertificateResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
+	entryBytes, err := fetchCertificateContent(r.client, entrycertificate)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
@@ -245,9 +244,9 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 
 	entrycertificate := newEntryCertificateFromResourceModel(&states)
 
-	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.Id)
+	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.VaultId, entrycertificate.Id)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if isEntryNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -261,7 +260,7 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
+	entryBytes, err := fetchCertificateContent(r.client, entrycertificate)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
@@ -302,9 +301,9 @@ func (r *EntryCertificateResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	err := r.client.Entries.Certificate.Delete(state.Id.ValueString())
+	err := r.client.Entries.Certificate.Delete(state.VaultId.ValueString(), state.Id.ValueString())
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if isEntryNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -314,7 +313,14 @@ func (r *EntryCertificateResource) Delete(ctx context.Context, req resource.Dele
 }
 
 func (r *EntryCertificateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	vaultId, entryId, err := parseEntryImportId(req.ID)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid Resource ID", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), entryId)...)
 }
 
 func (r *EntryCertificateResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {

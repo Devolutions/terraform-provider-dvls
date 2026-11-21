@@ -1,29 +1,15 @@
 package provider
 
 import (
-	"strings"
-
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
-
-// DVLS asymmetry: a folder's `path` field is the parent path on POST, but the
-// folder's own full path (parent + "\" + name) on GET. The helpers below hide
-// that on either side of the wire.
 
 func folderFullPath(parent, name string) string {
 	if parent == "" {
 		return name
 	}
 	return parent + "\\" + name
-}
-
-func folderParentFromFullPath(fullPath, name string) (parent string, ok bool) {
-	suffix := "\\" + name
-	if !strings.HasSuffix(fullPath, suffix) {
-		return "", false
-	}
-	return strings.TrimSuffix(fullPath, suffix), true
 }
 
 func newEntryFolderFromResourceModel(rm *EntryFolderResourceModel) dvls.Entry {
@@ -53,8 +39,8 @@ func setEntryFolderResourceModel(entry dvls.Entry, rm *EntryFolderResourceModel)
 	model.VaultName = vaultName
 	model.Name = basetypes.NewStringValue(entry.Name)
 
-	if parent, ok := folderParentFromFullPath(entry.Path, entry.Name); ok && parent != "" {
-		model.ParentFolder = basetypes.NewStringValue(parent)
+	if entry.Path != "" {
+		model.ParentFolder = basetypes.NewStringValue(entry.Path)
 	}
 
 	if entry.Description != "" {

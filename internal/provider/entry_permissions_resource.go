@@ -24,6 +24,7 @@ import (
 var _ resource.Resource = &EntryPermissionsResource{}
 var _ resource.ResourceWithImportState = &EntryPermissionsResource{}
 var _ resource.ResourceWithValidateConfig = &EntryPermissionsResource{}
+var _ resource.ResourceWithUpgradeState = &EntryPermissionsResource{}
 
 func NewEntryPermissionsResource() resource.Resource {
 	return &EntryPermissionsResource{}
@@ -42,16 +43,28 @@ func (r *EntryPermissionsResource) Schema(_ context.Context, _ resource.SchemaRe
 	overrideDescription := listMapValues(securityRoleOverrides)
 
 	resp.Schema = schema.Schema{
+		Version: 1,
 		MarkdownDescription: "The permission block of a DVLS entry or folder. Declare at most one `dvls_entry_permissions` per entry: creating it takes ownership of the permissions already set on the entry, and destroying it resets them to `default`.\n\n" +
-			"The `view` right is not part of `permissions`; it is controlled by `view_override` and `view_roles`. " +
-			"`permissions` and `view_roles` can only be set when `role_override` is `custom` or `custom_inherited`; for any other value DVLS forces `view_override` to `role_override`.\n\n" +
-			"DVLS has no partial update for permissions: the provider fetches the entry and saves it back, so a concurrent change to the same entry between the two requests is overwritten.",
+			"The `view` right is set in `permissions` like any other right. " +
+			"`permissions` can only be set when `role_override` is `custom` or `custom_inherited`; for any other value DVLS applies `role_override` to every right.\n\n" +
+			"Saving replaces every permission of the entry: a permission set outside Terraform is overwritten.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description:   "The ID of the entry the permissions apply to.",
 				Computed:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"vault_id": schema.StringAttribute{
+				Description: "The ID of the vault holding the entry or folder.",
+				Required:    true,
+				Validators:  []validator.String{uuidValidator{"vault id"}},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+						// A state upgraded from version 0 has no vault id: setting it is an in-place update.
+						resp.RequiresReplace = !req.StateValue.IsNull()
+					}, "Changing an existing vault_id forces replacement.", "Changing an existing `vault_id` forces replacement."),
+				},
 			},
 			"entry_id": schema.StringAttribute{
 				Description:   "The ID of the entry or folder.",
@@ -65,21 +78,6 @@ func (r *EntryPermissionsResource) Schema(_ context.Context, _ resource.SchemaRe
 				Computed:    true,
 				Default:     stringdefault.StaticString(securityRoleOverrides[dvls.SecurityRoleOverrideDefault]),
 				Validators:  []validator.String{stringvalidator.OneOf(overrideValues...)},
-			},
-			"view_override": schema.StringAttribute{
-				Description: fmt.Sprintf("How the `view` right is resolved. Possible values are %s. Must match `role_override` unless `role_override` is `custom` or `custom_inherited`.", overrideDescription),
-				Optional:    true,
-				Computed:    true,
-				Validators:  []validator.String{stringvalidator.OneOf(overrideValues...)},
-			},
-			"view_roles": schema.SetAttribute{
-				Description: "IDs of the principals (users, user groups or applications) granted the `view` right. Requires `view_override` to be `custom` or `custom_inherited`.",
-				Optional:    true,
-				ElementType: types.StringType,
-				Validators: []validator.Set{
-					setvalidator.SizeAtLeast(1),
-					setvalidator.ValueStringsAre(uuidValidator{"principal id"}),
-				},
 			},
 			"permissions": schema.SetNestedAttribute{
 				Description: "Rights granted on the entry, one block per right.",
@@ -133,20 +131,6 @@ func (r *EntryPermissionsResource) ValidateConfig(ctx context.Context, req resou
 			resp.Diagnostics.AddAttributeError(path.Root("permissions"), "permissions require a custom role_override",
 				fmt.Sprintf("permissions can only be set when role_override is custom or custom_inherited, got %q", roleOverride))
 		}
-		if !config.ViewRoles.IsNull() {
-			resp.Diagnostics.AddAttributeError(path.Root("view_roles"), "view_roles require a custom role_override",
-				fmt.Sprintf("view_roles can only be set when role_override is custom or custom_inherited, got %q", roleOverride))
-		}
-		if !config.ViewOverride.IsNull() && !config.ViewOverride.IsUnknown() && config.ViewOverride.ValueString() != roleOverride {
-			resp.Diagnostics.AddAttributeError(path.Root("view_override"), "view_override must match role_override",
-				fmt.Sprintf("DVLS forces view_override to role_override (%q) unless role_override is custom or custom_inherited", roleOverride))
-		}
-	}
-
-	if !config.ViewRoles.IsNull() && !config.ViewOverride.IsUnknown() &&
-		(config.ViewOverride.IsNull() || !isCustomSecurityRoleOverride(config.ViewOverride.ValueString())) {
-		resp.Diagnostics.AddAttributeError(path.Root("view_override"), "view_roles require a custom view_override",
-			"view_override must be custom or custom_inherited when view_roles is set")
 	}
 
 	if config.Permissions.IsNull() || config.Permissions.IsUnknown() {
@@ -220,7 +204,12 @@ func (r *EntryPermissionsResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	security, err := r.client.Entries.Permissions.GetWithContext(ctx, state.EntryId.ValueString())
+	if state.VaultId.IsNull() {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+		return
+	}
+
+	security, err := r.client.Entries.Permissions.GetWithContext(ctx, state.VaultId.ValueString(), state.EntryId.ValueString())
 	if err != nil {
 		if isEntryNotFound(err) {
 			resp.State.RemoveResource(ctx)
@@ -262,7 +251,13 @@ func (r *EntryPermissionsResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	err := r.client.Entries.Permissions.SetWithContext(ctx, state.EntryId.ValueString(), dvls.EntrySecurity{})
+	if state.VaultId.IsNull() {
+		resp.Diagnostics.AddError("unable to reset entry permissions",
+			"the state has no vault_id (it was created by an earlier provider version): set vault_id and apply before destroying, or remove the resource from the state with terraform state rm")
+		return
+	}
+
+	err := r.client.Entries.Permissions.SetWithContext(ctx, state.VaultId.ValueString(), state.EntryId.ValueString(), dvls.EntrySecurity{})
 	if err != nil {
 		if isEntryNotFound(err) {
 			return
@@ -273,14 +268,61 @@ func (r *EntryPermissionsResource) Delete(ctx context.Context, req resource.Dele
 }
 
 func (r *EntryPermissionsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	_, err := uuid.Parse(req.ID)
+	vaultId, entryId, err := parseEntryImportId(req.ID)
+	if err == nil {
+		_, err = uuid.Parse(vaultId)
+	}
+	if err == nil {
+		_, err = uuid.Parse(entryId)
+	}
 	if err != nil {
-		resp.Diagnostics.AddError("Invalid Resource ID", fmt.Sprintf("expected the entry id as a UUID, got %q", req.ID))
+		resp.Diagnostics.AddError("Invalid Resource ID", fmt.Sprintf("expected <vault_id>/<entry_id> with both ids as UUIDs, got %q", req.ID))
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entry_id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), entryId)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entry_id"), entryId)...)
+}
+
+func (r *EntryPermissionsResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	permissionObject := schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"right":    schema.StringAttribute{Required: true},
+			"override": schema.StringAttribute{Optional: true, Computed: true},
+			"roles":    schema.SetAttribute{Optional: true, ElementType: types.StringType},
+		},
+	}
+
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"id":            schema.StringAttribute{Computed: true},
+					"entry_id":      schema.StringAttribute{Required: true},
+					"role_override": schema.StringAttribute{Optional: true, Computed: true},
+					"view_override": schema.StringAttribute{Optional: true, Computed: true},
+					"view_roles":    schema.SetAttribute{Optional: true, ElementType: types.StringType},
+					"permissions":   schema.SetNestedAttribute{Optional: true, NestedObject: permissionObject},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				var prior entryPermissionsResourceModelV0
+				resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				upgraded, diags := upgradeEntryPermissionsStateV0(ctx, prior)
+				resp.Diagnostics.Append(diags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				resp.Diagnostics.Append(resp.State.Set(ctx, upgraded)...)
+			},
+		},
+	}
 }
 
 func (r *EntryPermissionsResource) apply(ctx context.Context, plan *EntryPermissionsResourceModel) diag.Diagnostics {
@@ -289,15 +331,16 @@ func (r *EntryPermissionsResource) apply(ctx context.Context, plan *EntryPermiss
 		return diags
 	}
 
+	vaultId := plan.VaultId.ValueString()
 	entryId := plan.EntryId.ValueString()
 
-	err := r.client.Entries.Permissions.SetWithContext(ctx, entryId, security)
+	err := r.client.Entries.Permissions.SetWithContext(ctx, vaultId, entryId, security)
 	if err != nil {
 		diags.AddError("unable to save entry permissions", err.Error())
 		return diags
 	}
 
-	saved, err := r.client.Entries.Permissions.GetWithContext(ctx, entryId)
+	saved, err := r.client.Entries.Permissions.GetWithContext(ctx, vaultId, entryId)
 	if err != nil {
 		diags.AddError("unable to fetch saved entry permissions", err.Error())
 		return diags

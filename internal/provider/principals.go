@@ -12,28 +12,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var userAuthenticationTypes = map[dvls.UserAuthenticationType]string{
-	dvls.UserAuthenticationBuiltin:      "builtin",
-	dvls.UserAuthenticationLocalWindows: "local_windows",
-	dvls.UserAuthenticationSqlServer:    "sql_server",
-	dvls.UserAuthenticationDomain:       "domain",
-	dvls.UserAuthenticationOffice365:    "office_365",
-	dvls.UserAuthenticationNone:         "none",
-	dvls.UserAuthenticationCloud:        "cloud",
-	dvls.UserAuthenticationLegacy:       "legacy",
-	dvls.UserAuthenticationAzureAD:      "azure_ad",
-	dvls.UserAuthenticationApplication:  "application",
-	dvls.UserAuthenticationOkta:         "okta",
-	dvls.UserAuthenticationPingOne:      "ping_one",
-	dvls.UserAuthenticationContractor:   "contractor",
+var userIdentityProviders = map[dvls.IdentityProvider]string{
+	dvls.IdentityProviderBuiltin:         "builtin",
+	dvls.IdentityProviderContractor:      "contractor",
+	dvls.IdentityProviderActiveDirectory: "active_directory",
+	dvls.IdentityProviderEntraId:         "entra_id",
+	dvls.IdentityProviderOkta:            "okta",
+	dvls.IdentityProviderPingOne:         "ping_one",
+	dvls.IdentityProviderKeycloak:        "keycloak",
 }
 
 var userGroupTypes = map[dvls.UserGroupType]string{
 	dvls.UserGroupTypeActiveDirectory: "active_directory",
 	dvls.UserGroupTypeCustom:          "custom",
-	dvls.UserGroupTypeOffice365:       "office_365",
+	dvls.UserGroupTypeEntraId:         "entra_id",
 	dvls.UserGroupTypeOkta:            "okta",
 	dvls.UserGroupTypePingOne:         "ping_one",
+	dvls.UserGroupTypeKeycloak:        "keycloak",
 }
 
 func exactlyOneOfSentence(attributes []string) string {
@@ -124,5 +119,13 @@ func userLookup(id, name, fullName types.String) []lookupKey[dvls.User] {
 		{id, func(user dvls.User) string { return user.Id }},
 		{name, func(user dvls.User) string { return user.Name }},
 		{fullName, func(user dvls.User) string { return user.FullName }},
+	}
+}
+
+func applicationLookup(id, name, fullName types.String) []lookupKey[dvls.ApplicationIdentity] {
+	return []lookupKey[dvls.ApplicationIdentity]{
+		{id, func(application dvls.ApplicationIdentity) string { return application.Id }},
+		{name, func(application dvls.ApplicationIdentity) string { return application.AppKey }},
+		{fullName, func(application dvls.ApplicationIdentity) string { return application.Name }},
 	}
 }

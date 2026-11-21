@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/Devolutions/go-dvls"
@@ -19,10 +18,10 @@ import (
 var errCertificateNotFound = errors.New("certificate entry not found")
 
 // fetchCertificateEntry retrieves a certificate entry's metadata, password, and file content.
-func fetchCertificateEntry(client *dvls.Client, id string) (dvls.EntryCertificate, []byte, error) {
-	entry, err := client.Entries.Certificate.Get(id)
+func fetchCertificateEntry(client *dvls.Client, vaultId, id string) (dvls.EntryCertificate, []byte, error) {
+	entry, err := client.Entries.Certificate.Get(vaultId, id)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
+		if isEntryNotFound(err) {
 			return entry, nil, errCertificateNotFound
 		}
 		return entry, nil, err
@@ -33,12 +32,21 @@ func fetchCertificateEntry(client *dvls.Client, id string) (dvls.EntryCertificat
 		return entry, nil, fmt.Errorf("read sensitive information: %w", err)
 	}
 
-	content, err := client.Entries.Certificate.GetFileContent(entry.Id)
+	content, err := fetchCertificateContent(client, entry)
 	if err != nil {
 		return entry, nil, fmt.Errorf("read certificate content: %w", err)
 	}
 
 	return entry, content, nil
+}
+
+// A URL certificate has no stored content: DVLS answers 404 for it.
+func fetchCertificateContent(client *dvls.Client, entry dvls.EntryCertificate) ([]byte, error) {
+	if entry.GetDataMode() != dvls.EntryCertificateDataModeFile {
+		return nil, nil
+	}
+
+	return client.Entries.Certificate.GetFileContent(entry.VaultId, entry.Id)
 }
 
 func newEntryCertificateFromResourceModel(plans *EntryCertificateResourceModelData) dvls.EntryCertificate {
@@ -77,6 +85,11 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 
 	// VaultName is user-input only — preserve from the existing model.
 	vaultName := data.VaultName
+
+	// DVLS returns the expiration in UTC: keep the configured offset when it is the same instant.
+	if prior, priorDiags := data.Expiration.ValueRFC3339Time(); !priorDiags.HasError() && !data.Expiration.IsNull() && !data.Expiration.IsUnknown() && prior.Equal(entrycertificate.Expiration) {
+		timeVal = data.Expiration
+	}
 
 	model := EntryCertificateResourceModel{
 		Id:         basetypes.NewStringValue(entrycertificate.Id),
@@ -130,7 +143,7 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 
 		model.Url = objectValue
 	default:
-		diags.AddError("unable to set certificate entry", fmt.Sprintf("unknown data mode %d. Should be 2 for files or 3 for url", entrycertificate.GetDataMode()))
+		diags.AddError("unable to set certificate entry", fmt.Sprintf("unknown data mode %q, expected %q or %q", entrycertificate.GetDataMode(), dvls.EntryCertificateDataModeFile, dvls.EntryCertificateDataModeURL))
 	}
 
 	*data = model
@@ -197,7 +210,7 @@ func setEntryCertificateDataModel(ctx context.Context, entrycertificate dvls.Ent
 
 		model.Url = objectValue
 	default:
-		diags.AddError("unable to set certificate entry", fmt.Sprintf("unknown data mode %d. Should be 2 for files or 3 for url", entrycertificate.GetDataMode()))
+		diags.AddError("unable to set certificate entry", fmt.Sprintf("unknown data mode %q, expected %q or %q", entrycertificate.GetDataMode(), dvls.EntryCertificateDataModeFile, dvls.EntryCertificateDataModeURL))
 	}
 
 	*data = model

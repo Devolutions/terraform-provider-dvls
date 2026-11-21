@@ -54,11 +54,23 @@ func TestAccEntryFolderResource_nested(t *testing.T) {
 		CheckDestroy:             testAccCheckEntryFolderDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEntryFolderResourceNestedConfig("tf_test_folder_nested"),
+				Config: testAccEntryFolderResourceNestedConfig("tf_test_folder_nested", "tf_test_child"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("dvls_entry_folder.parent", "name", "tf_test_parent"),
 					resource.TestCheckNoResourceAttr("dvls_entry_folder.parent", "parent_folder"),
 					resource.TestCheckResourceAttr("dvls_entry_folder.child", "name", "tf_test_child"),
+					resource.TestCheckResourceAttr("dvls_entry_folder.child", "parent_folder", "tf_test_parent"),
+				),
+			},
+			{
+				Config: testAccEntryFolderResourceNestedConfig("tf_test_folder_nested", "tf_test_child_renamed"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("dvls_entry_folder.child", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("dvls_entry_folder.child", "name", "tf_test_child_renamed"),
 					resource.TestCheckResourceAttr("dvls_entry_folder.child", "parent_folder", "tf_test_parent"),
 				),
 			},
@@ -106,7 +118,7 @@ resource "dvls_entry_folder" "test" {
 `, testAccProviderConfig(), vaultName, name, description)
 }
 
-func testAccEntryFolderResourceNestedConfig(vaultName string) string {
+func testAccEntryFolderResourceNestedConfig(vaultName, childName string) string {
 	return fmt.Sprintf(`
 %s
 
@@ -121,10 +133,10 @@ resource "dvls_entry_folder" "parent" {
 
 resource "dvls_entry_folder" "child" {
   vault_id      = dvls_vault.test.id
-  name          = "tf_test_child"
+  name          = %[3]q
   parent_folder = dvls_entry_folder.parent.name
 }
-`, testAccProviderConfig(), vaultName)
+`, testAccProviderConfig(), vaultName, childName)
 }
 
 // DVLS does not support folder moves: PUT /entry silently ignores `path`

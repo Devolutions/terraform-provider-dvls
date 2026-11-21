@@ -41,7 +41,8 @@ func (e *EntryCertificateEphemeralResource) Schema(_ context.Context, _ ephemera
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",
-				Computed:    true,
+				Required:    true,
+				Validators:  []validator.String{uuidValidator{"vault id"}},
 			},
 			"name": schema.StringAttribute{
 				Description: "Certificate name",
@@ -111,7 +112,7 @@ func (e *EntryCertificateEphemeralResource) Open(ctx context.Context, req epheme
 		return
 	}
 
-	entry, content, err := fetchCertificateEntry(e.client, data.Id.ValueString())
+	entry, content, err := fetchCertificateEntry(e.client, data.VaultId.ValueString(), data.Id.ValueString())
 	if err != nil {
 		if errors.Is(err, errCertificateNotFound) {
 			resp.Diagnostics.AddError("certificate entry not found", fmt.Sprintf("no certificate entry with id %q", data.Id.ValueString()))
