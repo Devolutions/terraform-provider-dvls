@@ -3,3 +3,6 @@ terraform import dvls_administrative_role_assignment.example 00000000-0000-0000-
 
 # Leave <scope_id> empty for a global assignment
 terraform import dvls_administrative_role_assignment.example 00000000-0000-0000-0000-000000000004/global//00000000-0000-0000-0000-000000000000
+
+# Or by the assignment id, needed when the principal holds the role at the scope through more than one assignment
+terraform import dvls_administrative_role_assignment.example 00000000-0000-0000-0000-000000000001

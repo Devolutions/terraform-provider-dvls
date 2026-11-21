@@ -43,6 +43,54 @@ func TestAccAdministrativeRoleAssignmentResource_byRoleId(t *testing.T) {
 				ImportStateIdFunc: testAccAdministrativeRoleAssignmentImportStateIdFunc("dvls_administrative_role_assignment.test"),
 				ImportStateVerify: true,
 			},
+			{
+				ResourceName:      "dvls_administrative_role_assignment.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAdministrativeRoleAssignmentResource_deletedOutOfBand(t *testing.T) {
+	testAccPreCheckRoleAssignment(t)
+	assigneeId := testAccFindAssigneeId(t)
+	config := testAccAdministrativeRoleAssignmentResourceConfig(
+		"tf_test_role_assignment_oob",
+		fmt.Sprintf("role_id = %q", dvls.BuiltinRoleVaultUserId),
+		assigneeId,
+		"",
+	)
+
+	var firstId string
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
+			testAccCheckAdministrativeRoleAssignmentDestroy,
+			testAccCheckVaultDestroy,
+		),
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: func(s *terraform.State) error {
+					firstId = s.RootModule().Resources["dvls_administrative_role_assignment.test"].Primary.ID
+					return nil
+				},
+			},
+			{
+				PreConfig: func() {
+					if err := testAccLiveClient(t).AdministrativeRoleAssignments.Delete(firstId); err != nil {
+						t.Fatalf("unable to delete role assignment: %s", err)
+					}
+				},
+				Config: config,
+				Check: func(s *terraform.State) error {
+					if id := s.RootModule().Resources["dvls_administrative_role_assignment.test"].Primary.ID; id == firstId {
+						return fmt.Errorf("the assignment deleted out of band was not recreated, id is still %s", id)
+					}
+					return nil
+				},
+			},
 		},
 	})
 }

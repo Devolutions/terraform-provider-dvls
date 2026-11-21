@@ -4,14 +4,17 @@ page_title: "dvls_administrative_role_assignment Resource - terraform-provider-d
 subcategory: ""
 description: |-
   A DVLS administrative role assignment: grants one administrative role to one principal (user, user group or application) on one scope.
-  Every attribute forces replacement. Creating an assignment that already exists adopts it.
+  Every attribute forces replacement. Creating an assignment that already exists adopts it, unless the principal holds the role at the scope through more than one assignment.
+  Import with <role_id>/<scope_type>/<scope_id>/<assignee_id> (leave <scope_id> empty for the global scope), or with the assignment id.
 ---
 
 # dvls_administrative_role_assignment (Resource)
 
 A DVLS administrative role assignment: grants one administrative role to one principal (user, user group or application) on one scope.
 
-Every attribute forces replacement. Creating an assignment that already exists adopts it.
+Every attribute forces replacement. Creating an assignment that already exists adopts it, unless the principal holds the role at the scope through more than one assignment.
+
+Import with `<role_id>/<scope_type>/<scope_id>/<assignee_id>` (leave `<scope_id>` empty for the global scope), or with the assignment id.
 
 ## Example Usage
 
@@ -68,4 +71,7 @@ terraform import dvls_administrative_role_assignment.example 00000000-0000-0000-
 
 # Leave <scope_id> empty for a global assignment
 terraform import dvls_administrative_role_assignment.example 00000000-0000-0000-0000-000000000004/global//00000000-0000-0000-0000-000000000000
+
+# Or by the assignment id, needed when the principal holds the role at the scope through more than one assignment
+terraform import dvls_administrative_role_assignment.example 00000000-0000-0000-0000-000000000001
 ```
