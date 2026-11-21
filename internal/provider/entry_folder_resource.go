@@ -64,16 +64,10 @@ func (r *EntryFolderResource) Schema(_ context.Context, _ resource.SchemaRequest
 				},
 			},
 			"parent_folder": schema.StringAttribute{
-				// DVLS PUT /entry silently ignores `path` changes on folder
-				// entries, so the public API has no move operation. Force
-				// replacement so users see the destructive plan instead of a
-				// no-op update that drifts state from the server.
-				MarkdownDescription: "Path of the parent folder. Omit for a folder at the vault root.\n\n" +
-					"Changing this forces replacement: DVLS has no folder-move API. " +
-					"Any entries still in the folder when it is destroyed are **orphaned** (kept in the vault but unreachable by a `folder = ...` reference). " +
-					"Move entries out before changing `parent_folder`.",
-				Optional:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				MarkdownDescription: "Path of the parent folder, e.g. `A\\B`. Omit for a folder at the vault root.\n\n" +
+					"Changing this moves the folder, with its content, in place. The new parent folder must already exist: " +
+					"declare it as its own `dvls_entry_folder` and reference it, the provider does not create it.",
+				Optional: true,
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the folder.",
@@ -169,6 +163,28 @@ func (r *EntryFolderResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
+	var state EntryFolderResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !plan.ParentFolder.Equal(state.ParentFolder) && plan.ParentFolder.ValueString() != "" {
+		exists, err := r.folderExists(ctx, plan.VaultId.ValueString(), plan.ParentFolder.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("unable to look up the new parent folder", err.Error())
+			return
+		}
+		if !exists {
+			resp.Diagnostics.AddAttributeError(path.Root("parent_folder"), "parent folder not found",
+				fmt.Sprintf("The folder %q does not exist in the vault, so %q cannot be moved into it. "+
+					"Declare %q as its own dvls_entry_folder resource and reference it from parent_folder, "+
+					"so that it is created before the move; the provider does not create parent folders.",
+					plan.ParentFolder.ValueString(), plan.Name.ValueString(), plan.ParentFolder.ValueString()))
+			return
+		}
+	}
+
 	folder := newEntryFolderFromResourceModel(plan)
 
 	folder, err := r.client.Entries.Folder.Update(folder)
@@ -223,6 +239,26 @@ func (r *EntryFolderResource) ImportState(ctx context.Context, req resource.Impo
 	resp.State.SetAttribute(ctx, path.Root("id"), entryId)
 }
 
+func (r *EntryFolderResource) folderExists(ctx context.Context, vaultId, fullPath string) (bool, error) {
+	parent, name := "", fullPath
+	if i := strings.LastIndex(fullPath, "\\"); i >= 0 {
+		parent, name = fullPath[:i], fullPath[i+1:]
+	}
+
+	folders, err := r.client.Entries.Folder.GetEntriesWithContext(ctx, vaultId, dvls.GetEntriesOptions{Path: &parent})
+	if err != nil {
+		return false, err
+	}
+
+	for _, folder := range folders {
+		if strings.EqualFold(folder.Name, name) && strings.EqualFold(folder.Path, parent) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // ModifyPlan warns at plan time when a folder is being destroyed or replaced
 // and still has entries inside. DVLS DELETE on a folder does not cascade to
 // its contents — they remain in the vault with a dangling `path` reference,
@@ -245,10 +281,9 @@ func (r *EntryFolderResource) ModifyPlan(ctx context.Context, req resource.Modif
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		// Skip when the change is an in-place update (rename, description).
+		// Skip when the change is an in-place update (rename, move, description).
 		if state.VaultId.Equal(plan.VaultId) &&
-			state.VaultName.Equal(plan.VaultName) &&
-			state.ParentFolder.Equal(plan.ParentFolder) {
+			state.VaultName.Equal(plan.VaultName) {
 			return
 		}
 	}

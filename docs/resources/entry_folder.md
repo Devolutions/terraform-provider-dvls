@@ -36,9 +36,9 @@ resource "dvls_entry_folder" "child" {
 ### Optional
 
 - `description` (String) The description of the folder.
-- `parent_folder` (String) Path of the parent folder. Omit for a folder at the vault root.
+- `parent_folder` (String) Path of the parent folder, e.g. `A\B`. Omit for a folder at the vault root.
 
-Changing this forces replacement: DVLS has no folder-move API. Any entries still in the folder when it is destroyed are **orphaned** (kept in the vault but unreachable by a `folder = ...` reference). Move entries out before changing `parent_folder`.
+Changing this moves the folder, with its content, in place. The new parent folder must already exist: declare it as its own `dvls_entry_folder` and reference it, the provider does not create it.
 - `vault_id` (String) The ID of the vault. Exactly one of `vault_id` or `vault_name` must be set.
 - `vault_name` (String) The name of the vault. Exactly one of `vault_id` or `vault_name` must be set.
 

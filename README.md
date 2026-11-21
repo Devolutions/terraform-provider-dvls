@@ -35,6 +35,9 @@ Configuration changes:
 - `dvls_administrative_role_assignment`: the `gateway` and `pam_provider` scope types are removed; remove such
   assignments from the state with `terraform state rm` before upgrading. Creating an assignment that already exists
   adopts it.
+- `dvls_entry_folder`: changing `parent_folder` moves the folder, with its content, in place (same ID) instead of
+  replacing it. The new parent must already exist: declare it as its own `dvls_entry_folder` and reference it; the
+  provider does not create it, and a move into a missing folder fails without changing anything.
 
 Data source attribute changes:
 
