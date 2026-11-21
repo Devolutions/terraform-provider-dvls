@@ -234,6 +234,105 @@ func testAccCheckEntryFolderPath(resourceName, wantPath string) resource.TestChe
 	}
 }
 
+// A folder update sends no credentials, and DVLS keeps the ones stored on the folder.
+func TestAccEntryFolderResource_keepsCredentials(t *testing.T) {
+	var folderId string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckEntryFolderDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEntryFolderResourceConfig("tf_test_folder_credentials", "tf_test_creds", "before"),
+				Check:  testAccStoreResourceId("dvls_entry_folder.test", &folderId),
+			},
+			{
+				PreConfig: func() {
+					client, err := getTestAccClient()
+					if err != nil {
+						t.Fatal(err)
+					}
+					folder, err := client.Entries.Folder.GetById(testAccFolderVaultId(t, client, "tf_test_folder_credentials"), folderId)
+					if err != nil {
+						t.Fatalf("unable to read folder: %s", err)
+					}
+					folder.Data = &dvls.EntryFolderData{Domain: "keep.local", Username: "keepuser"}
+					if _, err := client.Entries.Folder.Update(folder); err != nil {
+						t.Fatalf("unable to set folder credentials: %s", err)
+					}
+				},
+				Config: testAccEntryFolderResourceConfig("tf_test_folder_credentials", "tf_test_creds_renamed", "after"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckResourceId("dvls_entry_folder.test", &folderId),
+					resource.TestCheckResourceAttr("dvls_entry_folder.test", "name", "tf_test_creds_renamed"),
+					func(s *terraform.State) error {
+						client, err := getTestAccClient()
+						if err != nil {
+							return err
+						}
+						folder, err := client.Entries.Folder.GetById(s.RootModule().Resources["dvls_entry_folder.test"].Primary.Attributes["vault_id"], folderId)
+						if err != nil {
+							return err
+						}
+						data, ok := folder.GetFolderData()
+						if !ok || data.Domain != "keep.local" || data.Username != "keepuser" {
+							return fmt.Errorf("the rename cleared the folder credentials: %+v", data)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+// A folder deleted outside Terraform, in a vault the provider can still read, is gone: it is created again.
+func TestAccEntryFolderResource_deletedOutOfBand(t *testing.T) {
+	var folderId string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckEntryFolderDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEntryFolderResourceConfig("tf_test_folder_oob", "tf_test_oob", "oob"),
+				Check:  testAccStoreResourceId("dvls_entry_folder.test", &folderId),
+			},
+			{
+				PreConfig: func() {
+					client, err := getTestAccClient()
+					if err != nil {
+						t.Fatal(err)
+					}
+					if err := client.Entries.Folder.DeleteById(testAccFolderVaultId(t, client, "tf_test_folder_oob"), folderId); err != nil {
+						t.Fatalf("unable to delete folder: %s", err)
+					}
+				},
+				Config: testAccEntryFolderResourceConfig("tf_test_folder_oob", "tf_test_oob", "oob"),
+				Check: func(s *terraform.State) error {
+					if id := s.RootModule().Resources["dvls_entry_folder.test"].Primary.ID; id == folderId {
+						return fmt.Errorf("the folder deleted out of band was not created again, id is still %s", id)
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
+func testAccFolderVaultId(t *testing.T, client *dvls.Client, vaultName string) string {
+	t.Helper()
+
+	vault, err := client.Vaults.GetByName(vaultName)
+	if err != nil {
+		t.Fatalf("unable to find vault %s: %s", vaultName, err)
+	}
+
+	return vault.Id
+}
+
 // TestAccEntryFolderResource_byVaultName exercises the vault_name path
 // (resolved via dvls.Vaults.GetByName) instead of the direct vault_id input.
 func TestAccEntryFolderResource_byVaultName(t *testing.T) {
