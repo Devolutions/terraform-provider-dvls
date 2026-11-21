@@ -166,8 +166,11 @@ func (r *EntryCredentialApiKeyResource) Read(ctx context.Context, req resource.R
 
 	entryCredentialApiKey, err := r.client.Entries.Credential.GetById(entryCredentialApiKey.VaultId, entryCredentialApiKey.Id)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read api key credential entry", err.Error())
@@ -212,8 +215,11 @@ func (r *EntryCredentialApiKeyResource) Delete(ctx context.Context, req resource
 
 	err := r.client.Entries.Credential.Delete(entryCredentialApiKey)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to delete api key credential entry", err.Error())

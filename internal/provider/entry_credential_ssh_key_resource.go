@@ -178,8 +178,11 @@ func (r *EntryCredentialSSHKeyResource) Read(ctx context.Context, req resource.R
 
 	entryCredentialSSHKey, err := r.client.Entries.Credential.GetById(entryCredentialSSHKey.VaultId, entryCredentialSSHKey.Id)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read SSH key credential entry", err.Error())
@@ -224,8 +227,11 @@ func (r *EntryCredentialSSHKeyResource) Delete(ctx context.Context, req resource
 
 	err := r.client.Entries.Credential.Delete(entryCredentialSSHKey)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to delete SSH key credential entry", err.Error())

@@ -156,8 +156,11 @@ func (r *EntryCredentialConnectionStringResource) Read(ctx context.Context, req 
 
 	entryCredentialConnectionString, err := r.client.Entries.Credential.GetById(entryCredentialConnectionString.VaultId, entryCredentialConnectionString.Id)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read connection string credential entry", err.Error())
@@ -202,8 +205,11 @@ func (r *EntryCredentialConnectionStringResource) Delete(ctx context.Context, re
 
 	err := r.client.Entries.Credential.Delete(entryCredentialConnectionString)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to delete connection string credential entry", err.Error())

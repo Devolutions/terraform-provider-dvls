@@ -246,8 +246,11 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 
 	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.VaultId, entrycertificate.Id)
 	if err != nil {
-		if isEntryNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, states.Data.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read certificate entry", err.Error())
@@ -303,8 +306,8 @@ func (r *EntryCertificateResource) Delete(ctx context.Context, req resource.Dele
 
 	err := r.client.Entries.Certificate.Delete(state.VaultId.ValueString(), state.Id.ValueString())
 	if err != nil {
-		if isEntryNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
 			return
 		}
 		resp.Diagnostics.AddError("unable to delete certificate entry", err.Error())

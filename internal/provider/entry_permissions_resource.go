@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -211,8 +210,11 @@ func (r *EntryPermissionsResource) Read(ctx context.Context, req resource.ReadRe
 
 	security, err := r.client.Entries.Permissions.GetWithContext(ctx, state.VaultId.ValueString(), state.EntryId.ValueString())
 	if err != nil {
-		if isEntryNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read entry permissions", err.Error())
@@ -259,7 +261,8 @@ func (r *EntryPermissionsResource) Delete(ctx context.Context, req resource.Dele
 
 	err := r.client.Entries.Permissions.SetWithContext(ctx, state.VaultId.ValueString(), state.EntryId.ValueString(), dvls.EntrySecurity{})
 	if err != nil {
-		if isEntryNotFound(err) {
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
 			return
 		}
 		resp.Diagnostics.AddError("unable to reset entry permissions", err.Error())
@@ -357,8 +360,4 @@ func (r *EntryPermissionsResource) apply(ctx context.Context, plan *EntryPermiss
 	diags.Append(setEntryPermissionsResourceModel(ctx, saved, plan)...)
 
 	return diags
-}
-
-func isEntryNotFound(err error) bool {
-	return errors.Is(err, dvls.ErrEntryNotFound) || dvls.IsNotFound(err)
 }

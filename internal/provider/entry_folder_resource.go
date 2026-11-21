@@ -142,8 +142,11 @@ func (r *EntryFolderResource) Read(ctx context.Context, req resource.ReadRequest
 
 	folder, err := r.client.Entries.Folder.GetById(state.VaultId.ValueString(), state.Id.ValueString())
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read folder entry", err.Error())
@@ -208,8 +211,11 @@ func (r *EntryFolderResource) Delete(ctx context.Context, req resource.DeleteReq
 
 	err := r.client.Entries.Folder.DeleteById(state.VaultId.ValueString(), state.Id.ValueString())
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to delete folder entry", err.Error())
