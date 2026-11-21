@@ -285,12 +285,36 @@ func (r *EntryCertificateResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
+	var statePassword types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("password"), &statePassword)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	entrycertificate := newEntryCertificateFromResourceModel(&plans)
+
+	// A nil password keeps the stored one: removing it from the configuration must send an empty value.
+	clearPassword := plans.Data.Password.IsNull() && !statePassword.IsNull()
+	if clearPassword {
+		entrycertificate.Password = new("")
+	}
 
 	_, err := r.client.Entries.Certificate.Update(entrycertificate)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update certificate entry", err.Error())
 		return
+	}
+
+	if clearPassword {
+		stored, err := r.client.Entries.Certificate.Get(entrycertificate.VaultId, entrycertificate.Id)
+		if err != nil {
+			resp.Diagnostics.AddError("unable to check the certificate password was removed", err.Error())
+			return
+		}
+		if stored.Password != nil && *stored.Password != "" {
+			resp.Diagnostics.AddError("certificate password not removed", "DVLS kept the certificate password after an update that cleared it.")
+			return
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plans.Data)...)

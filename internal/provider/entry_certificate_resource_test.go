@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -74,6 +75,8 @@ data "dvls_entry_certificate" "test" {
 }
 `, testAccProviderConfig(), testAccCertificateContentB64)
 
+	configWithoutPassword := strings.Replace(config, "  password   = \"certificate-password\"\n", "", 1)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -97,6 +100,18 @@ data "dvls_entry_certificate" "test" {
 				ImportState:       true,
 				ImportStateIdFunc: testAccEntryImportStateIdFunc("dvls_entry_certificate.test"),
 				ImportStateVerify: true,
+			},
+			{
+				Config: configWithoutPassword,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("dvls_entry_certificate.test", "password"),
+					resource.TestCheckNoResourceAttr("data.dvls_entry_certificate.test", "password"),
+					resource.TestCheckResourceAttr("data.dvls_entry_certificate.test", "file.content_b64", testAccCertificateContentB64),
+				),
+			},
+			{
+				Config:   configWithoutPassword,
+				PlanOnly: true,
 			},
 		},
 	})
