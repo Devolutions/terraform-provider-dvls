@@ -4,7 +4,7 @@ page_title: "dvls_entry_permissions Resource - terraform-provider-dvls"
 subcategory: ""
 description: |-
   The permission block of a DVLS entry or folder. Declare at most one dvls_entry_permissions per entry: creating it takes ownership of the permissions already set on the entry, and destroying it resets them to default.
-  The view right is set in permissions like any other right. permissions can only be set when role_override is custom or custom_inherited; for any other value DVLS applies role_override to every right.
+  The view right is set in permissions like any other right, except that it cannot use the default override: DVLS does not store a view right left to its default, so leave it out instead. permissions can only be set when role_override is custom or custom_inherited; for any other value DVLS applies role_override to every right.
   Saving replaces every permission of the entry: a permission set outside Terraform is overwritten.
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 The permission block of a DVLS entry or folder. Declare at most one `dvls_entry_permissions` per entry: creating it takes ownership of the permissions already set on the entry, and destroying it resets them to `default`.
 
-The `view` right is set in `permissions` like any other right. `permissions` can only be set when `role_override` is `custom` or `custom_inherited`; for any other value DVLS applies `role_override` to every right.
+The `view` right is set in `permissions` like any other right, except that it cannot use the `default` override: DVLS does not store a view right left to its default, so leave it out instead. `permissions` can only be set when `role_override` is `custom` or `custom_inherited`; for any other value DVLS applies `role_override` to every right.
 
 Saving replaces every permission of the entry: a permission set outside Terraform is overwritten.
 

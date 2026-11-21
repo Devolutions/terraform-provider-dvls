@@ -60,6 +60,20 @@ func TestUpgradeEntryPermissionsStateV0(t *testing.T) {
 			},
 		},
 		{
+			name: "a default view is not folded into permissions",
+			prior: func(t *testing.T) entryPermissionsResourceModelV0 {
+				return entryPermissionsResourceModelV0{
+					RoleOverride: types.StringValue("custom"),
+					ViewOverride: types.StringValue("default"),
+					ViewRoles:    types.SetNull(types.StringType),
+					Permissions:  permissionSet(t, permission("edit", "custom", principal)),
+				}
+			},
+			want: func(t *testing.T) types.Set {
+				return permissionSet(t, permission("edit", "custom", principal))
+			},
+		},
+		{
 			name: "non custom role keeps no permissions",
 			prior: func(t *testing.T) entryPermissionsResourceModelV0 {
 				return entryPermissionsResourceModelV0{

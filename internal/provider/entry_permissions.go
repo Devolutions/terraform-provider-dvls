@@ -184,8 +184,8 @@ type entryPermissionsResourceModelV0 struct {
 	Permissions  types.Set    `tfsdk:"permissions"`
 }
 
-// upgradeEntryPermissionsStateV0 folds view_override and view_roles into a view permission and drops the sealed
-// right. A v0 state has no vault id: it stays null until the next apply sets it from the configuration.
+// upgradeEntryPermissionsStateV0 folds view_override and view_roles into a view permission, unless the view is left
+// to its default, and drops the sealed right. A v0 state has no vault id: it stays null until the next apply sets it from the configuration.
 func upgradeEntryPermissionsStateV0(ctx context.Context, prior entryPermissionsResourceModelV0) (EntryPermissionsResourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -201,7 +201,10 @@ func upgradeEntryPermissionsStateV0(ctx context.Context, prior entryPermissionsR
 		return permission.Right.ValueString() == "sealed"
 	})
 
-	if isCustomSecurityRoleOverride(prior.RoleOverride.ValueString()) && !prior.ViewOverride.IsNull() && !prior.ViewOverride.IsUnknown() {
+	// DVLS does not store a view right left to its default without roles: such a view permission would not read back.
+	defaultView := prior.ViewOverride.ValueString() == securityRoleOverrides[dvls.SecurityRoleOverrideDefault] &&
+		len(prior.ViewRoles.Elements()) == 0
+	if isCustomSecurityRoleOverride(prior.RoleOverride.ValueString()) && !prior.ViewOverride.IsNull() && !prior.ViewOverride.IsUnknown() && !defaultView {
 		permissions = append(permissions, entryPermissionModel{
 			Right:    types.StringValue(securityRoleRights[dvls.SecurityRoleRightView]),
 			Override: prior.ViewOverride,

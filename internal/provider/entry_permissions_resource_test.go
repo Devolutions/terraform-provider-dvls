@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/Devolutions/go-dvls"
@@ -107,6 +108,33 @@ func TestAccEntryPermissionsResource_custom(t *testing.T) {
 				ImportState:       true,
 				ImportStateIdFunc: testAccEntryImportStateIdFunc("dvls_entry_permissions.test"),
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// DVLS does not store a view right left to its default, so the provider refuses it instead of failing after the save.
+func TestAccEntryPermissionsResource_defaultViewRejected(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEntryPermissionsResourceConfig("tf_test_permissions_default_view", `
+  role_override = "custom"
+
+  permissions = [
+    {
+      right    = "view"
+      override = "default"
+    },
+    {
+      right    = "edit"
+      override = "everyone"
+    },
+  ]
+`),
+				ExpectError: regexp.MustCompile("view permission with the default override"),
 			},
 		},
 	})

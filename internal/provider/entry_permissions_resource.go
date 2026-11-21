@@ -44,7 +44,7 @@ func (r *EntryPermissionsResource) Schema(_ context.Context, _ resource.SchemaRe
 	resp.Schema = schema.Schema{
 		Version: 1,
 		MarkdownDescription: "The permission block of a DVLS entry or folder. Declare at most one `dvls_entry_permissions` per entry: creating it takes ownership of the permissions already set on the entry, and destroying it resets them to `default`.\n\n" +
-			"The `view` right is set in `permissions` like any other right. " +
+			"The `view` right is set in `permissions` like any other right, except that it cannot use the `default` override: DVLS does not store a view right left to its default, so leave it out instead. " +
 			"`permissions` can only be set when `role_override` is `custom` or `custom_inherited`; for any other value DVLS applies `role_override` to every right.\n\n" +
 			"Saving replaces every permission of the entry: a permission set outside Terraform is overwritten.",
 
@@ -154,6 +154,13 @@ func (r *EntryPermissionsResource) ValidateConfig(ctx context.Context, req resou
 			continue
 		}
 		right := permission.Right.ValueString()
+
+		// DVLS does not store a view right left to its default, so it would not read back.
+		if right == securityRoleRights[dvls.SecurityRoleRightView] && !permission.Override.IsUnknown() &&
+			permission.Override.ValueString() == securityRoleOverrides[dvls.SecurityRoleOverrideDefault] {
+			resp.Diagnostics.AddAttributeError(path.Root("permissions"), "view permission with the default override",
+				"a view permission whose override is default is the same as no view permission, and DVLS does not store it: remove it")
+		}
 		if _, ok := seen[right]; ok {
 			resp.Diagnostics.AddAttributeError(path.Root("permissions"), "duplicate permission right",
 				fmt.Sprintf("the %q right is declared more than once", right))
