@@ -14,9 +14,10 @@ A DVLS Certificate Entry, fetched ephemerally so the certificate file and passwo
 
 ```terraform
 # Certificate file content and password are fetched only during plan/apply
-# and never stored in Terraform state. Lookup is by ID only.
+# and never stored in Terraform state. Lookup is by vault and entry ID.
 ephemeral "dvls_entry_certificate" "by_id" {
-  id = "00000000-0000-0000-0000-000000000000"
+  vault_id = "00000000-0000-0000-0000-000000000000"
+  id       = "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -26,6 +27,7 @@ ephemeral "dvls_entry_certificate" "by_id" {
 ### Required
 
 - `id` (String) Certificate ID
+- `vault_id` (String) Vault ID
 
 ### Read-Only
 
@@ -37,7 +39,6 @@ ephemeral "dvls_entry_certificate" "by_id" {
 - `password` (String, Sensitive) Certificate password
 - `tags` (Set of String) Certificate tags
 - `url` (Attributes) Certificate url. Either file or url is populated. (see [below for nested schema](#nestedatt--url))
-- `vault_id` (String) Vault ID
 
 <a id="nestedatt--file"></a>
 ### Nested Schema for `file`

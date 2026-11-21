@@ -5,16 +5,49 @@ Terraform Provider for managing your Devolutions Server instance.
 
 ## Compatibility
 
-| Provider version | DVLS version   |
-|------------------|----------------|
-| 0.6.0+           | 2026.x         |
-| 0.5.x            | 2025.x         |
+| Provider version | DVLS version                                   |
+|------------------|------------------------------------------------|
+| 0.8.0+           | the first DVLS release with the public API v2 |
+| 0.6.x - 0.7.x    | 2026.x                                         |
+| 0.5.x            | 2025.x                                         |
 
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0 (>= 1.10 required to use ephemeral resources)
 - [Go](https://golang.org/doc/install) >= 1.26
-- [Devolutions Server](https://devolutions.net/server) >= 2026.x
+- [Devolutions Server](https://devolutions.net/server) with the public API v2 (see [Compatibility](#compatibility))
+
+## Upgrading to 0.8.0
+
+The provider uses [go-dvls](https://github.com/Devolutions/go-dvls) v1.0.0, which talks to the DVLS public API v2
+only. Every entry is reached through its vault, so lookups that took an entry ID alone now take the vault ID too.
+
+Configuration changes:
+
+- `dvls_entry_permissions`: `vault_id` is required. `view_override` and `view_roles` are removed: set the `view`
+  right in `permissions` like any other right (`{ right = "view", roles = [...] }`). The `sealed` right is removed.
+  The import ID is `<vault_id>/<entry_id>`. Existing state is upgraded: the view settings move into `permissions`,
+  and the first apply after adding `vault_id` updates the resource in place. Until that apply the resource is not
+  refreshed, and destroying it fails.
+- `dvls_entry_certificate`, `dvls_entry_host` and `dvls_entry_website` data sources and the
+  `dvls_entry_certificate` ephemeral resource: `vault_id` is required.
+- `dvls_entry_certificate` resource: the import ID is `<vault_id>/<entry_id>`.
+- `dvls_administrative_role_assignment`: the `gateway` and `pam_provider` scope types are removed; remove such
+  assignments from the state with `terraform state rm` before upgrading. Creating an assignment that already exists
+  adopts it.
+
+Data source attribute changes:
+
+| Data source                | Before                                                     | After                                    |
+|----------------------------|------------------------------------------------------------|------------------------------------------|
+| `dvls_administrative_role` | `supported_scopes`, `is_assignable`, `is_pam`, `is_privileged` | `assignable_scopes` (empty when the role cannot be assigned) |
+| `dvls_user`                | `authentication_type`, `is_administrator`, `user_groups`      | `identity_provider`, `is_workspace_owner` |
+| `dvls_user_group`          | `is_administrator`, `type` value `office_365`                 | `is_workspace_owner`, `is_enabled`, `type` values `entra_id` and `keycloak` |
+| `dvls_application`         | `is_administrator`, `user_groups`                             | `is_workspace_owner` |
+| `dvls_entry_website`       | `web_browser_application`                                   | removed |
+
+Behaviour changes: vault and entry name lookups match ignoring case, and updating a nested `dvls_entry_folder` (a
+rename or a description change) no longer moves it to the vault root.
 
 ## Building The Provider
 
@@ -96,7 +129,8 @@ provider "dvls" {
 }
 
 data "dvls_entry_website" "example" {
-  id = "id-of-website-entry"
+  vault_id = "id-of-vault"
+  id       = "id-of-website-entry"
 }
 
 output "website_name" {

@@ -14,7 +14,8 @@ Certificate data source
 
 ```terraform
 data "dvls_entry_certificate" "example" {
-  id = "00000000-0000-0000-0000-000000000000"
+  vault_id = "00000000-0000-0000-0000-000000000000"
+  id       = "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -24,6 +25,7 @@ data "dvls_entry_certificate" "example" {
 ### Required
 
 - `id` (String) Certificate ID
+- `vault_id` (String) Vault ID
 
 ### Read-Only
 
@@ -35,7 +37,6 @@ data "dvls_entry_certificate" "example" {
 - `password` (String, Sensitive) Certificate password
 - `tags` (Set of String) Certificate tags
 - `url` (Attributes) Certificate url. Either file or url must be specified. (see [below for nested schema](#nestedatt--url))
-- `vault_id` (String) Vault ID
 
 <a id="nestedatt--file"></a>
 ### Nested Schema for `file`

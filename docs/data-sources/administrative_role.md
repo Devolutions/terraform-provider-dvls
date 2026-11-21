@@ -3,12 +3,12 @@
 page_title: "dvls_administrative_role Data Source - terraform-provider-dvls"
 subcategory: ""
 description: |-
-  A DVLS administrative role definition. Requires DVLS 2026.3 or later.
+  A DVLS administrative role definition.
 ---
 
 # dvls_administrative_role (Data Source)
 
-A DVLS administrative role definition. Requires DVLS 2026.3 or later.
+A DVLS administrative role definition.
 
 ## Example Usage
 
@@ -34,10 +34,7 @@ data "dvls_administrative_role" "by_name" {
 
 ### Read-Only
 
+- `assignable_scopes` (List of String) The scope types the role can be assigned on, empty for a role that cannot be assigned. Possible values are [global, organizational_unit, vault].
 - `description` (String) The description of the administrative role.
-- `is_assignable` (Boolean) Whether the role can be assigned to principals.
 - `is_built_in` (Boolean) Whether the role is a DVLS built-in role.
-- `is_pam` (Boolean) Whether the role is a PAM role.
-- `is_privileged` (Boolean) Whether the role is privileged.
 - `permissions` (List of String) The administrative permissions granted by the role.
-- `supported_scopes` (List of String) The scope types the role can be assigned on. Possible values are [gateway, global, organizational_unit, pam_provider, vault].

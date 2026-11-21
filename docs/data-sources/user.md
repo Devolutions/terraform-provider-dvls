@@ -40,8 +40,7 @@ data "dvls_user" "by_full_name" {
 
 ### Read-Only
 
-- `authentication_type` (String) How the user authenticates. Possible values are [application, azure_ad, builtin, cloud, contractor, domain, legacy, local_windows, none, office_365, okta, ping_one, sql_server].
 - `email` (String) The email address of the user.
-- `is_administrator` (Boolean) Whether the user is a DVLS administrator.
+- `identity_provider` (String) The provider that authenticates the user. Possible values are [active_directory, builtin, contractor, entra_id, keycloak, okta, ping_one].
 - `is_enabled` (Boolean) Whether the user is enabled.
-- `user_groups` (Set of String) IDs of the user groups the user belongs to.
+- `is_workspace_owner` (Boolean) Whether the user's own account is a workspace owner (ownership held through a user group is not reflected).

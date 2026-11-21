@@ -4,17 +4,17 @@ page_title: "dvls_entry_permissions Resource - terraform-provider-dvls"
 subcategory: ""
 description: |-
   The permission block of a DVLS entry or folder. Declare at most one dvls_entry_permissions per entry: creating it takes ownership of the permissions already set on the entry, and destroying it resets them to default.
-  The view right is not part of permissions; it is controlled by view_override and view_roles. permissions and view_roles can only be set when role_override is custom or custom_inherited; for any other value DVLS forces view_override to role_override.
-  DVLS has no partial update for permissions: the provider fetches the entry and saves it back, so a concurrent change to the same entry between the two requests is overwritten.
+  The view right is set in permissions like any other right. permissions can only be set when role_override is custom or custom_inherited; for any other value DVLS applies role_override to every right.
+  Saving replaces every permission of the entry: a permission set outside Terraform is overwritten.
 ---
 
 # dvls_entry_permissions (Resource)
 
 The permission block of a DVLS entry or folder. Declare at most one `dvls_entry_permissions` per entry: creating it takes ownership of the permissions already set on the entry, and destroying it resets them to `default`.
 
-The `view` right is not part of `permissions`; it is controlled by `view_override` and `view_roles`. `permissions` and `view_roles` can only be set when `role_override` is `custom` or `custom_inherited`; for any other value DVLS forces `view_override` to `role_override`.
+The `view` right is set in `permissions` like any other right. `permissions` can only be set when `role_override` is `custom` or `custom_inherited`; for any other value DVLS applies `role_override` to every right.
 
-DVLS has no partial update for permissions: the provider fetches the entry and saves it back, so a concurrent change to the same entry between the two requests is overwritten.
+Saving replaces every permission of the entry: a permission set outside Terraform is overwritten.
 
 ## Example Usage
 
@@ -26,19 +26,22 @@ resource "dvls_entry_folder" "secrets" {
 
 # Make the folder visible to everyone
 resource "dvls_entry_permissions" "everyone" {
+  vault_id      = dvls_entry_folder.secrets.vault_id
   entry_id      = dvls_entry_folder.secrets.id
   role_override = "everyone"
-  view_override = "everyone"
 }
 
 # Custom permissions: only the listed principals can view, one of them can edit
 resource "dvls_entry_permissions" "custom" {
+  vault_id      = "00000000-0000-0000-0000-000000000000"
   entry_id      = "00000000-0000-0000-0000-000000000000"
   role_override = "custom"
-  view_override = "custom"
-  view_roles    = ["00000000-0000-0000-0000-000000000000"]
 
   permissions = [
+    {
+      right = "view"
+      roles = ["00000000-0000-0000-0000-000000000000"]
+    },
     {
       right = "edit"
       roles = ["00000000-0000-0000-0000-000000000000"]
@@ -57,13 +60,12 @@ resource "dvls_entry_permissions" "custom" {
 ### Required
 
 - `entry_id` (String) The ID of the entry or folder.
+- `vault_id` (String) The ID of the vault holding the entry or folder.
 
 ### Optional
 
 - `permissions` (Attributes Set) Rights granted on the entry, one block per right. (see [below for nested schema](#nestedatt--permissions))
 - `role_override` (String) How the entry permissions are resolved. Possible values are [custom, custom_inherited, default, everyone, inherited, never]. Defaults to `default`.
-- `view_override` (String) How the `view` right is resolved. Possible values are [custom, custom_inherited, default, everyone, inherited, never]. Must match `role_override` unless `role_override` is `custom` or `custom_inherited`.
-- `view_roles` (Set of String) IDs of the principals (users, user groups or applications) granted the `view` right. Requires `view_override` to be `custom` or `custom_inherited`.
 
 ### Read-Only
 
@@ -74,7 +76,7 @@ resource "dvls_entry_permissions" "custom" {
 
 Required:
 
-- `right` (String) The right being granted. Possible values are [add, approve_checkout_request, attachment, checkout, connection_history, console_management_tools, delete, delete_handbook, edit, edit_attachment, edit_description, edit_handbook, edit_information, edit_password, edit_security, edit_session_recording_configuration, edit_status, edit_vpn_ssh_gateway_configuration, execute, export, force_checkin, handbook, inventory, macro_script_tools, macro_script_tools_entry, move, password_history, read_logs, remote_tools, reset_password, sealed, view_information, view_logs, view_password, view_sensitive_information, view_session_recording, web_management_tools].
+- `right` (String) The right being granted. Possible values are [add, approve_checkout_request, attachment, checkout, connection_history, console_management_tools, delete, delete_handbook, edit, edit_attachment, edit_description, edit_handbook, edit_information, edit_password, edit_security, edit_session_recording_configuration, edit_status, edit_vpn_ssh_gateway_configuration, execute, export, force_checkin, handbook, inventory, macro_script_tools, macro_script_tools_entry, move, password_history, read_logs, remote_tools, reset_password, view, view_information, view_logs, view_password, view_sensitive_information, view_session_recording, web_management_tools].
 
 Optional:
 
@@ -88,6 +90,6 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-# This resource can be imported using the entry ID, e.g.
-terraform import dvls_entry_permissions.example 00000000-0000-0000-0000-000000000000
+# This resource can be imported using `<vault_id>/<entry_id>` format, e.g.
+terraform import dvls_entry_permissions.example 00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-000000000000
 ```
