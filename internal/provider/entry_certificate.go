@@ -62,7 +62,7 @@ func newEntryCertificateFromResourceModel(plans *EntryCertificateResourceModelDa
 		Description:     plans.Data.Description.ValueString(),
 		Expiration:      expiration,
 		Tags:            tags,
-		Password:        plans.Data.Password.ValueString(),
+		Password:        plans.Data.Password.ValueStringPointer(),
 	}
 
 	if !plans.Data.File.IsNull() {
@@ -111,8 +111,8 @@ func setEntryCertificateResourceModel(ctx context.Context, entrycertificate dvls
 
 	model.Tags = tagsSliceToSet(entrycertificate.Tags)
 
-	if entrycertificate.Password != "" {
-		model.Password = basetypes.NewStringValue(entrycertificate.Password)
+	if entrycertificate.Password != nil && *entrycertificate.Password != "" {
+		model.Password = basetypes.NewStringValue(*entrycertificate.Password)
 	}
 
 	switch entrycertificate.GetDataMode() {
@@ -178,8 +178,8 @@ func setEntryCertificateDataModel(ctx context.Context, entrycertificate dvls.Ent
 
 	model.Tags = tagsSliceToSet(entrycertificate.Tags)
 
-	if entrycertificate.Password != "" {
-		model.Password = basetypes.NewStringValue(entrycertificate.Password)
+	if entrycertificate.Password != nil && *entrycertificate.Password != "" {
+		model.Password = basetypes.NewStringValue(*entrycertificate.Password)
 	}
 
 	switch entrycertificate.GetDataMode() {
