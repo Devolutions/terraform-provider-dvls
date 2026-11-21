@@ -266,9 +266,8 @@ func (r *EntryFolderResource) folderExists(ctx context.Context, vaultId, fullPat
 }
 
 // ModifyPlan warns at plan time when a folder is being destroyed or replaced
-// and still has entries inside. DVLS DELETE on a folder does not cascade to
-// its contents — they remain in the vault with a dangling `path` reference,
-// which is rarely the user's intent.
+// and still has entries inside: DVLS refuses to delete a folder that is not
+// empty (HTTP 409), so the apply fails unless the entries are gone by then.
 func (r *EntryFolderResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.State.Raw.IsNull() {
 		return // create — no existing folder to inspect
@@ -320,14 +319,14 @@ func (r *EntryFolderResource) ModifyPlan(ctx context.Context, req resource.Modif
 		noun = "entry"
 	}
 	resp.Diagnostics.AddWarning(
-		fmt.Sprintf("Folder %q has %d %s that will be orphaned", fullPath, len(children), noun),
+		fmt.Sprintf("Folder %q is not empty: %d %s", fullPath, len(children), noun),
 		fmt.Sprintf(
-			"Folder %s forces %s and DVLS does not cascade-delete folder contents. "+
-				"After apply, the entries below remain in the vault but their `path` will reference a folder that no longer exists, "+
-				"making them unreachable by `folder = %q`. Move them out before applying.\n\n"+
-				"Direct credential children: %s\n\n"+
-				"Note: this check only enumerates direct credential children. Sub-folders, host, website, and certificate entries are NOT listed but will be orphaned the same way.",
-			fullPath, action, fullPath, strings.Join(names, ", "),
+			"Folder %s forces %s, and DVLS refuses to delete a folder that still holds entries (HTTP 409). "+
+				"The apply fails unless the entries below are deleted or moved out first, by this apply when Terraform manages them "+
+				"or by hand otherwise.\n\n"+
+				"Credential entries: %s\n\n"+
+				"Note: this check only lists credential entries. Sub-folders, host, website and certificate entries block the deletion the same way.",
+			fullPath, action, strings.Join(names, ", "),
 		),
 	)
 }
