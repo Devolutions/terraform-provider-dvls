@@ -61,21 +61,9 @@ the content of its vault is readable, and fails otherwise (if the vault was dele
 
 ## Building The Provider
 
-Until go-dvls v1.0.0 is tagged, `go.sum` has no checksum for it and a plain `go build` fails with a missing
-`go.sum` entry. Build against a local go-dvls checkout through a workspace file kept outside the repository:
-
-```shell
-cat > ../go.work <<'EOF'
-go 1.27.3
-
-use ./terraform-provider-dvls
-
-replace github.com/Devolutions/go-dvls v1.0.0 => ./go-dvls
-EOF
-GOWORK=$PWD/../go.work go build ./...
-```
-
-Once v1.0.0 is tagged, run `go mod tidy` without the workspace and commit `go.sum`.
+Until go-dvls v1.0.0 is tagged, `go.mod` pins go-dvls to a pseudo-version of a commit on its `feat/api-v2` branch.
+Bump it to v1.0.0 once tagged: `go get github.com/Devolutions/go-dvls@v1.0.0 && go mod tidy`, then commit `go.mod` and
+`go.sum`.
 
 1. Clone the repository
 1. Enter the repository directory
