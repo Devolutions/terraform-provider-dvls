@@ -1,5 +1,5 @@
 name: Test
-run-name: "Acceptance Test — ${{ github.ref_name }}"
+run-name: Acceptance Test — ${{ github.ref_name }}
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -31,16 +31,15 @@ jobs:
         uses: golangci/golangci-lint-action@v9.2.0
 
   acceptance-test:
-    needs: lint
-    runs-on: ubuntu-latest
-
     concurrency:
       group: acceptance-test
       cancel-in-progress: false
+    needs: lint
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -54,7 +53,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Cache Terraform providers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ runner.temp }}/tf-plugin-cache
           key: tf-plugin-cache-${{ runner.os }}-${{ hashFiles('go.sum') }}
