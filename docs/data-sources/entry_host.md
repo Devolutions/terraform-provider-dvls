@@ -14,7 +14,8 @@ Host data source
 
 ```terraform
 data "dvls_entry_host" "example" {
-  id = "00000000-0000-0000-0000-000000000000"
+  vault_id = "00000000-0000-0000-0000-000000000000"
+  id       = "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -24,6 +25,7 @@ data "dvls_entry_host" "example" {
 ### Required
 
 - `id` (String) User Credential ID
+- `vault_id` (String) Vault ID
 
 ### Read-Only
 
@@ -34,4 +36,3 @@ data "dvls_entry_host" "example" {
 - `password` (String, Sensitive) Host password
 - `tags` (Set of String) Host tags
 - `username` (String) Host username
-- `vault_id` (String) Vault ID

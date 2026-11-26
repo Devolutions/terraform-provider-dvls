@@ -2,10 +2,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/Devolutions/go-dvls"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -49,7 +51,8 @@ func (r *AdministrativeRoleAssignmentResource) Metadata(_ context.Context, req r
 func (r *AdministrativeRoleAssignmentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "A DVLS administrative role assignment: grants one administrative role to one principal (user, user group or application) on one scope.\n\n" +
-			"Requires DVLS 2026.3 or later. Every attribute forces replacement.",
+			"Every attribute forces replacement. Creating an assignment that already exists adopts it, unless the principal holds the role at the scope through more than one assignment.\n\n" +
+			"Import with `<role_id>/<scope_type>/<scope_id>/<assignee_id>` (leave `<scope_id>` empty for the global scope), or with the assignment id.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -93,7 +96,7 @@ func (r *AdministrativeRoleAssignmentResource) Schema(_ context.Context, _ resou
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"scope_id": schema.StringAttribute{
-				Description:   "The ID of the scoped resource (vault, gateway, PAM provider or organizational unit). Required unless `scope_type` is `global`, in which case it must be omitted.",
+				Description:   "The ID of the scoped resource (vault or organizational unit). Required unless `scope_type` is `global`, in which case it must be omitted.",
 				Optional:      true,
 				Validators:    []validator.String{uuidValidator{"scope id"}},
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
@@ -123,7 +126,7 @@ func (r *AdministrativeRoleAssignmentResource) ValidateConfig(ctx context.Contex
 		return
 	}
 
-	isGlobal := config.ScopeType.ValueString() == administrativeRoleScopeTypes[dvls.AdministrativeRoleScopeGlobal]
+	isGlobal := config.ScopeType.ValueString() == administrativeRoleScopeTypes[dvls.AdministrativeRoleScopeWorkspace]
 	if isGlobal && !config.ScopeId.IsNull() {
 		resp.Diagnostics.AddAttributeError(path.Root("scope_id"), "scope_id must not be set", "scope_id must be omitted when scope_type is global")
 		return
@@ -170,31 +173,29 @@ func (r *AdministrativeRoleAssignmentResource) Create(ctx context.Context, req r
 		return
 	}
 
-	err = r.client.AdministrativeRoleAssignments.AddMemberWithContext(ctx, dvls.AdministrativeRoleMemberRequest{
-		AdministrativeRoleId: roleId,
-		AssigneeId:           plan.AssigneeId.ValueString(),
-		ScopeType:            scopeType,
-		ScopeResourceId:      plan.ScopeId.ValueStringPointer(),
+	assignment, err := r.client.AdministrativeRoleAssignments.NewWithContext(ctx, dvls.AdministrativeRoleAssignmentRequest{
+		RoleId:     roleId,
+		AssigneeId: plan.AssigneeId.ValueString(),
+		ScopeType:  scopeType,
+		ScopeId:    plan.ScopeId.ValueString(),
 	})
-	if err != nil {
+	if errors.Is(err, dvls.ErrAdministrativeRoleAssignmentAlreadyExists) {
+		var found bool
+		assignment, found, diags = r.findAssignment(ctx, roleId, plan.ScopeType.ValueString(), plan.ScopeId.ValueString(), plan.AssigneeId.ValueString())
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if !found {
+			resp.Diagnostics.AddError("unable to create administrative role assignment", fmt.Sprintf("DVLS reports the assignment already exists but does not list it: %s", err))
+			return
+		}
+	} else if err != nil {
 		resp.Diagnostics.AddError("unable to create administrative role assignment", administrativeRoleErrorDetail(err))
 		return
 	}
 
-	member, found, diags := r.findMember(ctx, roleId, plan.ScopeType.ValueString(), plan.ScopeId.ValueString(), plan.AssigneeId.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError(
-			"administrative role assignment not found after creation",
-			fmt.Sprintf("DVLS accepted the assignment but does not list %q as a member of role %q, verify the assignee id refers to an existing principal", plan.AssigneeId.ValueString(), roleId),
-		)
-		return
-	}
-
-	setAdministrativeRoleAssignmentResourceModel(member, plan)
+	setAdministrativeRoleAssignmentResourceModel(assignment, plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -207,17 +208,19 @@ func (r *AdministrativeRoleAssignmentResource) Read(ctx context.Context, req res
 		return
 	}
 
-	member, found, diags := r.findMember(ctx, state.RoleId.ValueString(), state.ScopeType.ValueString(), state.ScopeId.ValueString(), state.AssigneeId.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.State.RemoveResource(ctx)
+	// The saved id, not the role, scope and assignee: an assignee can hold the same role at the same scope more than
+	// once (a temporary grant next to the permanent one this resource created).
+	assignment, err := r.client.AdministrativeRoleAssignments.GetWithContext(ctx, state.Id.ValueString())
+	if err != nil {
+		if dvls.IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		resp.Diagnostics.AddError("unable to read administrative role assignment", administrativeRoleErrorDetail(err))
 		return
 	}
 
-	setAdministrativeRoleAssignmentResourceModel(member, state)
+	setAdministrativeRoleAssignmentResourceModel(assignment, state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -241,7 +244,7 @@ func (r *AdministrativeRoleAssignmentResource) Delete(ctx context.Context, req r
 		return
 	}
 
-	err := r.client.AdministrativeRoleAssignments.RemoveMemberWithContext(ctx, state.Id.ValueString())
+	err := r.client.AdministrativeRoleAssignments.DeleteWithContext(ctx, state.Id.ValueString())
 	if err != nil {
 		if dvls.IsNotFound(err) {
 			return
@@ -252,13 +255,30 @@ func (r *AdministrativeRoleAssignmentResource) Delete(ctx context.Context, req r
 }
 
 func (r *AdministrativeRoleAssignmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	if _, err := uuid.Parse(req.ID); err == nil {
+		assignment, err := r.client.AdministrativeRoleAssignments.GetWithContext(ctx, req.ID)
+		if err != nil {
+			resp.Diagnostics.AddError("unable to read administrative role assignment", administrativeRoleErrorDetail(err))
+			return
+		}
+
+		state := &AdministrativeRoleAssignmentResourceModel{ScopeType: types.StringValue(administrativeRoleScopeTypes[assignment.ScopeType])}
+		if assignment.ScopeId != "" {
+			state.ScopeId = types.StringValue(assignment.ScopeId)
+		}
+		setAdministrativeRoleAssignmentResourceModel(assignment, state)
+
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+		return
+	}
+
 	roleId, scopeType, scopeId, assigneeId, err := parseAdministrativeRoleAssignmentImportId(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Invalid Resource ID", err.Error())
 		return
 	}
 
-	member, found, diags := r.findMember(ctx, roleId, scopeType, scopeId, assigneeId)
+	assignment, found, diags := r.findAssignment(ctx, roleId, scopeType, scopeId, assigneeId)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -272,41 +292,76 @@ func (r *AdministrativeRoleAssignmentResource) ImportState(ctx context.Context, 
 	if scopeId != "" {
 		state.ScopeId = types.StringValue(scopeId)
 	}
-	setAdministrativeRoleAssignmentResourceModel(member, state)
+	setAdministrativeRoleAssignmentResourceModel(assignment, state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func (r *AdministrativeRoleAssignmentResource) findMember(ctx context.Context, roleId, scopeTypeValue, scopeId, assigneeId string) (dvls.AdministrativeRoleMember, bool, diag.Diagnostics) {
+func (r *AdministrativeRoleAssignmentResource) findAssignment(ctx context.Context, roleId, scopeTypeValue, scopeId, assigneeId string) (dvls.AdministrativeRoleAssignment, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	scopeType, err := lookupMapValue(administrativeRoleScopeTypes, scopeTypeValue)
 	if err != nil {
 		diags.AddError("invalid scope type", fmt.Sprintf("unknown scope type %q, expected one of %s", scopeTypeValue, listMapValues(administrativeRoleScopeTypes)))
-		return dvls.AdministrativeRoleMember{}, false, diags
+		return dvls.AdministrativeRoleAssignment{}, false, diags
 	}
 
-	members, err := r.client.AdministrativeRoleAssignments.GetMembersWithContext(ctx, roleId, scopeType, scopeId)
+	assignments, err := r.client.AdministrativeRoleAssignments.ListWithContext(ctx, dvls.AdministrativeRoleAssignmentFilter{
+		RoleId:     roleId,
+		AssigneeId: assigneeId,
+		ScopeType:  scopeType,
+		ScopeId:    scopeId,
+	})
 	if err != nil {
+		if isAdministrativeRoleAssignmentFilterGone(err) {
+			return dvls.AdministrativeRoleAssignment{}, false, diags
+		}
 		diags.AddError("unable to read administrative role assignment", administrativeRoleErrorDetail(err))
-		return dvls.AdministrativeRoleMember{}, false, diags
+		return dvls.AdministrativeRoleAssignment{}, false, diags
 	}
 
-	for _, member := range members {
-		if member.AssigneeId == assigneeId {
-			return member, true, diags
+	assignment, found, err := singleAssignment(assignments, assigneeId)
+	if err != nil {
+		diags.AddError("ambiguous administrative role assignment", err.Error())
+	}
+
+	return assignment, found, diags
+}
+
+// singleAssignment returns the only assignment of assigneeId. The API does not say which of several assignments of
+// one role at one scope is the permanent one, so more than one is an error rather than a guess.
+func singleAssignment(assignments []dvls.AdministrativeRoleAssignment, assigneeId string) (dvls.AdministrativeRoleAssignment, bool, error) {
+	var matches []dvls.AdministrativeRoleAssignment
+	for _, assignment := range assignments {
+		if assignment.AssigneeId == assigneeId {
+			matches = append(matches, assignment)
 		}
 	}
 
-	return dvls.AdministrativeRoleMember{}, false, diags
+	switch len(matches) {
+	case 0:
+		return dvls.AdministrativeRoleAssignment{}, false, nil
+	case 1:
+		return matches[0], true, nil
+	}
+
+	ids := make([]string, len(matches))
+	for i, match := range matches {
+		ids[i] = match.Id
+	}
+
+	return dvls.AdministrativeRoleAssignment{}, false, fmt.Errorf(
+		"%q holds this role at this scope through %d assignments (%s), for instance a temporary grant next to a permanent one, "+
+			"and DVLS does not tell which one is permanent. Import the one to manage by its assignment id "+
+			"(terraform import <address> <assignment_id>), or remove the others", assigneeId, len(matches), strings.Join(ids, ", "))
 }
 
-func setAdministrativeRoleAssignmentResourceModel(member dvls.AdministrativeRoleMember, data *AdministrativeRoleAssignmentResourceModel) {
-	data.Id = types.StringValue(member.Id)
-	data.RoleId = types.StringValue(member.AdministrativeRoleId)
-	data.AssigneeId = types.StringValue(member.AssigneeId)
-	data.AssigneeName = types.StringValue(member.AssigneeName)
-	data.AssigneeType = types.StringValue(administrativeRoleAssigneeTypes[member.AssigneeType])
+func setAdministrativeRoleAssignmentResourceModel(assignment dvls.AdministrativeRoleAssignment, data *AdministrativeRoleAssignmentResourceModel) {
+	data.Id = types.StringValue(assignment.Id)
+	data.RoleId = types.StringValue(assignment.RoleId)
+	data.AssigneeId = types.StringValue(assignment.AssigneeId)
+	data.AssigneeName = types.StringValue(assignment.AssigneeName)
+	data.AssigneeType = types.StringValue(administrativeRoleAssigneeTypes[assignment.AssigneeType])
 }
 
 func parseAdministrativeRoleAssignmentImportId(id string) (string, string, string, string, error) {

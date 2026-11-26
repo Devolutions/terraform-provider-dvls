@@ -166,8 +166,11 @@ func (r *EntryCredentialUsernamePasswordResource) Read(ctx context.Context, req 
 
 	entryCredentialUsernamePassword, err := r.client.Entries.Credential.GetById(entryCredentialUsernamePassword.VaultId, entryCredentialUsernamePassword.Id)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read username password credential entry", err.Error())
@@ -212,8 +215,11 @@ func (r *EntryCredentialUsernamePasswordResource) Delete(ctx context.Context, re
 
 	err := r.client.Entries.Credential.Delete(entryCredentialUsernamePassword)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to delete username password credential entry", err.Error())

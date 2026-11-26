@@ -43,6 +43,54 @@ func TestAccAdministrativeRoleAssignmentResource_byRoleId(t *testing.T) {
 				ImportStateIdFunc: testAccAdministrativeRoleAssignmentImportStateIdFunc("dvls_administrative_role_assignment.test"),
 				ImportStateVerify: true,
 			},
+			{
+				ResourceName:      "dvls_administrative_role_assignment.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAdministrativeRoleAssignmentResource_deletedOutOfBand(t *testing.T) {
+	testAccPreCheckRoleAssignment(t)
+	assigneeId := testAccFindAssigneeId(t)
+	config := testAccAdministrativeRoleAssignmentResourceConfig(
+		"tf_test_role_assignment_oob",
+		fmt.Sprintf("role_id = %q", dvls.BuiltinRoleVaultUserId),
+		assigneeId,
+		"",
+	)
+
+	var firstId string
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
+			testAccCheckAdministrativeRoleAssignmentDestroy,
+			testAccCheckVaultDestroy,
+		),
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: func(s *terraform.State) error {
+					firstId = s.RootModule().Resources["dvls_administrative_role_assignment.test"].Primary.ID
+					return nil
+				},
+			},
+			{
+				PreConfig: func() {
+					if err := testAccLiveClient(t).AdministrativeRoleAssignments.Delete(firstId); err != nil {
+						t.Fatalf("unable to delete role assignment: %s", err)
+					}
+				},
+				Config: config,
+				Check: func(s *terraform.State) error {
+					if id := s.RootModule().Resources["dvls_administrative_role_assignment.test"].Primary.ID; id == firstId {
+						return fmt.Errorf("the assignment deleted out of band was not recreated, id is still %s", id)
+					}
+					return nil
+				},
+			},
 		},
 	})
 }
@@ -76,6 +124,49 @@ func TestAccAdministrativeRoleAssignmentResource_byRoleName(t *testing.T) {
 				ImportStateIdFunc:       testAccAdministrativeRoleAssignmentImportStateIdFunc("dvls_administrative_role_assignment.test"),
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"role_name"},
+			},
+		},
+	})
+}
+
+// TestAccAdministrativeRoleAssignmentResource_adoptsExisting creates the
+// assignment outside Terraform first: DVLS refuses the duplicate and the
+// resource adopts the existing assignment.
+func TestAccAdministrativeRoleAssignmentResource_adoptsExisting(t *testing.T) {
+	testAccPreCheckRoleAssignment(t)
+	assigneeId := testAccFindAssigneeId(t)
+	client := testAccLiveClient(t)
+
+	vault, err := client.Vaults.New(dvls.Vault{Name: "tf_test_role_assignment_adopt"})
+	if err != nil {
+		t.Fatalf("unable to create vault: %s", err)
+	}
+	t.Cleanup(func() { _ = client.Vaults.Delete(vault.Id) })
+
+	existing, err := client.AdministrativeRoleAssignments.New(dvls.AdministrativeRoleAssignmentRequest{
+		RoleId:     dvls.BuiltinRoleVaultUserId,
+		AssigneeId: assigneeId,
+		ScopeType:  dvls.AdministrativeRoleScopeVault,
+		ScopeId:    vault.Id,
+	})
+	if err != nil {
+		t.Fatalf("unable to create role assignment: %s", err)
+	}
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckAdministrativeRoleAssignmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccProviderConfig() + fmt.Sprintf(`
+resource "dvls_administrative_role_assignment" "test" {
+  role_id     = %q
+  assignee_id = %q
+  scope_type  = "vault"
+  scope_id    = %q
+}
+`, dvls.BuiltinRoleVaultUserId, assigneeId, vault.Id),
+				Check: resource.TestCheckResourceAttr("dvls_administrative_role_assignment.test", "id", existing.Id),
 			},
 		},
 	})

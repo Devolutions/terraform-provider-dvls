@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/Devolutions/go-dvls"
 	resourcevalidator "github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
@@ -74,4 +76,34 @@ func resolveVaultId(ctx context.Context, client *dvls.Client, vaultId, vaultName
 		return "", diags
 	}
 	return vault.Id, diags
+}
+
+func isEntryNotFound(err error) bool {
+	return errors.Is(err, dvls.ErrEntryNotFound) || dvls.IsNotFound(err)
+}
+
+// entryGone reports whether err, returned by an entry route of the vault vaultId, proves that the entry no longer
+// exists. DVLS answers the same 404 for a vault the provider's identity cannot open, so a 404 counts only when the
+// content of the vault is readable; otherwise the diagnostics hold an error, since the entry may still exist.
+func entryGone(ctx context.Context, client *dvls.Client, vaultId string, err error) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if !isEntryNotFound(err) {
+		return false, diags
+	}
+
+	readable, checkErr := client.Vaults.ContentReadableWithContext(ctx, vaultId)
+	if checkErr != nil {
+		diags.AddError("unable to tell whether the entry was deleted",
+			fmt.Sprintf("DVLS answered 404 for the entry, and checking access to the content of vault %s failed: %s", vaultId, checkErr))
+		return false, diags
+	}
+	if !readable {
+		diags.AddError("entry not reachable",
+			fmt.Sprintf("DVLS answered 404 for the entry, and the provider's identity cannot read the content of vault %s: "+
+				"the vault was deleted or the identity lost access to it, so the entry may still exist. "+
+				"Restore the access, or, if the vault is gone, remove the resource from the state with terraform state rm.", vaultId))
+		return false, diags
+	}
+
+	return true, diags
 }

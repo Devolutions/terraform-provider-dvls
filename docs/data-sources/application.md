@@ -40,6 +40,5 @@ data "dvls_application" "by_full_name" {
 
 ### Read-Only
 
-- `is_administrator` (Boolean) Whether the application is a DVLS administrator.
 - `is_enabled` (Boolean) Whether the application is enabled.
-- `user_groups` (Set of String) IDs of the user groups the application belongs to.
+- `is_workspace_owner` (Boolean) Whether the application is a workspace owner.

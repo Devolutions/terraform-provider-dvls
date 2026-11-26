@@ -88,7 +88,8 @@ func (d *EntryCertificateDataSource) Schema(ctx context.Context, req datasource.
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",
-				Computed:    true,
+				Required:    true,
+				Validators:  []validator.String{uuidValidator{"vault id"}},
 			},
 			"name": schema.StringAttribute{
 				Description: "Certificate name",
@@ -182,7 +183,7 @@ func (d *EntryCertificateDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	entrycertificate, content, err := fetchCertificateEntry(d.client, data.Id.ValueString())
+	entrycertificate, content, err := fetchCertificateEntry(d.client, data.VaultId.ValueString(), data.Id.ValueString())
 	if err != nil {
 		if errors.Is(err, errCertificateNotFound) {
 			resp.State.RemoveResource(ctx)

@@ -3,7 +3,7 @@ module github.com/Devolutions/terraform-provider-dvls
 go 1.27.3
 
 require (
-	github.com/Devolutions/go-dvls v0.21.0
+	github.com/Devolutions/go-dvls v0.22.1-0.20261121225818-1b145f45a81e
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-docs v0.24.0
 	github.com/hashicorp/terraform-plugin-framework v1.17.0

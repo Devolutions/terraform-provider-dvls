@@ -20,7 +20,7 @@ func TestAccAdministrativeRoleDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.dvls_administrative_role.by_id", "id", dvls.BuiltinRoleVaultUserId),
 					resource.TestCheckResourceAttrSet("data.dvls_administrative_role.by_id", "name"),
 					resource.TestCheckResourceAttr("data.dvls_administrative_role.by_id", "is_built_in", "true"),
-					resource.TestCheckTypeSetElemAttr("data.dvls_administrative_role.by_id", "supported_scopes.*", "vault"),
+					resource.TestCheckTypeSetElemAttr("data.dvls_administrative_role.by_id", "assignable_scopes.*", "vault"),
 				),
 			},
 			{

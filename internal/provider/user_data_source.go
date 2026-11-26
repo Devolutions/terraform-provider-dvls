@@ -22,14 +22,13 @@ type UserDataSource struct {
 }
 
 type UserDataSourceModel struct {
-	Id                 types.String `tfsdk:"id"`
-	Name               types.String `tfsdk:"name"`
-	FullName           types.String `tfsdk:"full_name"`
-	Email              types.String `tfsdk:"email"`
-	AuthenticationType types.String `tfsdk:"authentication_type"`
-	IsAdministrator    types.Bool   `tfsdk:"is_administrator"`
-	IsEnabled          types.Bool   `tfsdk:"is_enabled"`
-	UserGroups         types.Set    `tfsdk:"user_groups"`
+	Id               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	FullName         types.String `tfsdk:"full_name"`
+	Email            types.String `tfsdk:"email"`
+	IdentityProvider types.String `tfsdk:"identity_provider"`
+	IsWorkspaceOwner types.Bool   `tfsdk:"is_workspace_owner"`
+	IsEnabled        types.Bool   `tfsdk:"is_enabled"`
 }
 
 func (d *UserDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -48,22 +47,17 @@ func (d *UserDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 				Description: "The email address of the user.",
 				Computed:    true,
 			},
-			"authentication_type": schema.StringAttribute{
-				Description: fmt.Sprintf("How the user authenticates. Possible values are %s.", listMapValues(userAuthenticationTypes)),
+			"identity_provider": schema.StringAttribute{
+				Description: fmt.Sprintf("The provider that authenticates the user. Possible values are %s.", listMapValues(userIdentityProviders)),
 				Computed:    true,
 			},
-			"is_administrator": schema.BoolAttribute{
-				Description: "Whether the user is a DVLS administrator.",
+			"is_workspace_owner": schema.BoolAttribute{
+				Description: "Whether the user's own account is a workspace owner (ownership held through a user group is not reflected).",
 				Computed:    true,
 			},
 			"is_enabled": schema.BoolAttribute{
 				Description: "Whether the user is enabled.",
 				Computed:    true,
-			},
-			"user_groups": schema.SetAttribute{
-				Description: "IDs of the user groups the user belongs to.",
-				Computed:    true,
-				ElementType: types.StringType,
 			},
 		},
 	}
@@ -105,14 +99,13 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	*data = UserDataSourceModel{
-		Id:                 types.StringValue(user.Id),
-		Name:               types.StringValue(user.Name),
-		FullName:           types.StringValue(user.FullName),
-		Email:              types.StringValue(user.Email),
-		AuthenticationType: types.StringValue(userAuthenticationTypes[user.AuthenticationType]),
-		IsAdministrator:    types.BoolValue(user.IsAdministrator),
-		IsEnabled:          types.BoolValue(user.IsEnabled),
-		UserGroups:         tagsSliceToSet(user.UserGroups),
+		Id:               types.StringValue(user.Id),
+		Name:             types.StringValue(user.Name),
+		FullName:         types.StringValue(user.FullName),
+		Email:            types.StringValue(user.Email),
+		IdentityProvider: types.StringValue(userIdentityProviders[user.IdentityProvider]),
+		IsWorkspaceOwner: types.BoolValue(user.IsWorkspaceOwner),
+		IsEnabled:        types.BoolValue(user.IsEnabled),
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

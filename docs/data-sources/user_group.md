@@ -35,5 +35,6 @@ data "dvls_user_group" "by_name" {
 ### Read-Only
 
 - `description` (String) The description of the user group.
-- `is_administrator` (Boolean) Whether members of the group are DVLS administrators.
-- `type` (String) The source of the user group. Possible values are [active_directory, custom, office_365, okta, ping_one].
+- `is_enabled` (Boolean) Whether the user group is enabled.
+- `is_workspace_owner` (Boolean) Whether the group makes its members workspace owners.
+- `type` (String) The source of the user group. Possible values are [active_directory, custom, entra_id, keycloak, okta, ping_one].

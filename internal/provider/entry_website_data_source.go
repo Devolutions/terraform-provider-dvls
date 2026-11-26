@@ -33,10 +33,9 @@ type EntryWebsiteDataSourceModel struct {
 	Tags        types.Set    `tfsdk:"tags"`
 
 	// General
-	Url                   types.String `tfsdk:"url"`
-	WebBrowserApplication types.Int64  `tfsdk:"web_browser_application"`
-	Username              types.String `tfsdk:"username"`
-	Password              types.String `tfsdk:"password"`
+	Url      types.String `tfsdk:"url"`
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
 }
 
 func (d *EntryWebsiteDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -55,7 +54,8 @@ func (d *EntryWebsiteDataSource) Schema(ctx context.Context, req datasource.Sche
 			},
 			"vault_id": schema.StringAttribute{
 				Description: "Vault ID",
-				Computed:    true,
+				Required:    true,
+				Validators:  []validator.String{uuidValidator{"vault id"}},
 			},
 			"name": schema.StringAttribute{
 				Description: "Website name",
@@ -76,10 +76,6 @@ func (d *EntryWebsiteDataSource) Schema(ctx context.Context, req datasource.Sche
 			},
 			"url": schema.StringAttribute{
 				Description: "Website URL",
-				Computed:    true,
-			},
-			"web_browser_application": schema.Int64Attribute{
-				Description: "Web browser application ID",
 				Computed:    true,
 			},
 			"username": schema.StringAttribute{
@@ -124,7 +120,7 @@ func (d *EntryWebsiteDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	entryWebsite, err := d.client.Entries.Website.Get(data.Id.ValueString())
+	entryWebsite, err := d.client.Entries.Website.Get(data.VaultId.ValueString(), data.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading Website Entry",
@@ -150,9 +146,8 @@ func (d *EntryWebsiteDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.Tags = tagsSliceToSet(entryWebsite.Tags)
 
 	data.Url = types.StringValue(entryWebsiteSensitiveData.WebsiteDetails.URL)
-	data.WebBrowserApplication = types.Int64Value(int64(entryWebsiteSensitiveData.WebsiteDetails.WebBrowserApplication))
 	data.Username = types.StringValue(entryWebsiteSensitiveData.WebsiteDetails.Username)
-	data.Password = types.StringValue(*entryWebsiteSensitiveData.WebsiteDetails.Password)
+	data.Password = types.StringPointerValue(entryWebsiteSensitiveData.WebsiteDetails.Password)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)

@@ -22,12 +22,11 @@ type ApplicationDataSource struct {
 }
 
 type ApplicationDataSourceModel struct {
-	Id              types.String `tfsdk:"id"`
-	Name            types.String `tfsdk:"name"`
-	FullName        types.String `tfsdk:"full_name"`
-	IsAdministrator types.Bool   `tfsdk:"is_administrator"`
-	IsEnabled       types.Bool   `tfsdk:"is_enabled"`
-	UserGroups      types.Set    `tfsdk:"user_groups"`
+	Id               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	FullName         types.String `tfsdk:"full_name"`
+	IsWorkspaceOwner types.Bool   `tfsdk:"is_workspace_owner"`
+	IsEnabled        types.Bool   `tfsdk:"is_enabled"`
 }
 
 func (d *ApplicationDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -42,18 +41,13 @@ func (d *ApplicationDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"id":        principalIdAttribute("application", userLookupKeys),
 			"name":      lookupAttribute("The application key.", userLookupKeys),
 			"full_name": lookupAttribute("The display name of the application.", userLookupKeys),
-			"is_administrator": schema.BoolAttribute{
-				Description: "Whether the application is a DVLS administrator.",
+			"is_workspace_owner": schema.BoolAttribute{
+				Description: "Whether the application is a workspace owner.",
 				Computed:    true,
 			},
 			"is_enabled": schema.BoolAttribute{
 				Description: "Whether the application is enabled.",
 				Computed:    true,
-			},
-			"user_groups": schema.SetAttribute{
-				Description: "IDs of the user groups the application belongs to.",
-				Computed:    true,
-				ElementType: types.StringType,
 			},
 		},
 	}
@@ -88,19 +82,18 @@ func (d *ApplicationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	application, err := findPrincipal(ctx, d.client.Users.ListApplicationsWithContext, userLookup(data.Id, data.Name, data.FullName))
+	application, err := findPrincipal(ctx, d.client.Users.ListApplicationsWithContext, applicationLookup(data.Id, data.Name, data.FullName))
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read application", principalErrorDetail(err, "application"))
 		return
 	}
 
 	*data = ApplicationDataSourceModel{
-		Id:              types.StringValue(application.Id),
-		Name:            types.StringValue(application.Name),
-		FullName:        types.StringValue(application.FullName),
-		IsAdministrator: types.BoolValue(application.IsAdministrator),
-		IsEnabled:       types.BoolValue(application.IsEnabled),
-		UserGroups:      tagsSliceToSet(application.UserGroups),
+		Id:               types.StringValue(application.Id),
+		Name:             types.StringValue(application.AppKey),
+		FullName:         types.StringValue(application.Name),
+		IsWorkspaceOwner: types.BoolValue(application.IsWorkspaceOwner),
+		IsEnabled:        types.BoolValue(application.IsEnabled),
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

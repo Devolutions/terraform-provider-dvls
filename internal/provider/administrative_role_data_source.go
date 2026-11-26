@@ -24,15 +24,12 @@ type AdministrativeRoleDataSource struct {
 }
 
 type AdministrativeRoleDataSourceModel struct {
-	Id              types.String `tfsdk:"id"`
-	Name            types.String `tfsdk:"name"`
-	Description     types.String `tfsdk:"description"`
-	Permissions     types.List   `tfsdk:"permissions"`
-	SupportedScopes types.List   `tfsdk:"supported_scopes"`
-	IsAssignable    types.Bool   `tfsdk:"is_assignable"`
-	IsBuiltIn       types.Bool   `tfsdk:"is_built_in"`
-	IsPam           types.Bool   `tfsdk:"is_pam"`
-	IsPrivileged    types.Bool   `tfsdk:"is_privileged"`
+	Id               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	Description      types.String `tfsdk:"description"`
+	Permissions      types.List   `tfsdk:"permissions"`
+	AssignableScopes types.List   `tfsdk:"assignable_scopes"`
+	IsBuiltIn        types.Bool   `tfsdk:"is_built_in"`
 }
 
 func (d *AdministrativeRoleDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -41,7 +38,7 @@ func (d *AdministrativeRoleDataSource) Metadata(_ context.Context, req datasourc
 
 func (d *AdministrativeRoleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A DVLS administrative role definition. Requires DVLS 2026.3 or later.",
+		Description: "A DVLS administrative role definition.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -64,25 +61,13 @@ func (d *AdministrativeRoleDataSource) Schema(_ context.Context, _ datasource.Sc
 				Computed:    true,
 				ElementType: types.StringType,
 			},
-			"supported_scopes": schema.ListAttribute{
-				Description: fmt.Sprintf("The scope types the role can be assigned on. Possible values are %s.", listMapValues(administrativeRoleScopeTypes)),
+			"assignable_scopes": schema.ListAttribute{
+				Description: fmt.Sprintf("The scope types the role can be assigned on, empty for a role that cannot be assigned. Possible values are %s.", listMapValues(administrativeRoleScopeTypes)),
 				Computed:    true,
 				ElementType: types.StringType,
 			},
-			"is_assignable": schema.BoolAttribute{
-				Description: "Whether the role can be assigned to principals.",
-				Computed:    true,
-			},
 			"is_built_in": schema.BoolAttribute{
 				Description: "Whether the role is a DVLS built-in role.",
-				Computed:    true,
-			},
-			"is_pam": schema.BoolAttribute{
-				Description: "Whether the role is a PAM role.",
-				Computed:    true,
-			},
-			"is_privileged": schema.BoolAttribute{
-				Description: "Whether the role is privileged.",
 				Computed:    true,
 			},
 		},
@@ -144,11 +129,11 @@ func setAdministrativeRoleDataModel(ctx context.Context, role dvls.Administrativ
 
 	permissions := make([]string, 0, len(role.Permissions))
 	for _, permission := range role.Permissions {
-		permissions = append(permissions, permission.String())
+		permissions = append(permissions, string(permission))
 	}
 
-	scopes := make([]string, 0, len(role.SupportedScopes))
-	for _, scope := range role.SupportedScopes {
+	scopes := make([]string, 0, len(role.AssignableScopes))
+	for _, scope := range role.AssignableScopes {
 		scopes = append(scopes, administrativeRoleScopeTypes[scope])
 	}
 
@@ -161,15 +146,12 @@ func setAdministrativeRoleDataModel(ctx context.Context, role dvls.Administrativ
 	}
 
 	*data = AdministrativeRoleDataSourceModel{
-		Id:              types.StringValue(role.Id),
-		Name:            types.StringValue(role.Name),
-		Description:     types.StringValue(role.Description),
-		Permissions:     permissionsList,
-		SupportedScopes: scopesList,
-		IsAssignable:    types.BoolValue(role.IsAssignable),
-		IsBuiltIn:       types.BoolValue(role.IsBuiltIn),
-		IsPam:           types.BoolValue(role.IsPam),
-		IsPrivileged:    types.BoolValue(role.IsPrivileged),
+		Id:               types.StringValue(role.Id),
+		Name:             types.StringValue(role.Name),
+		Description:      types.StringValue(role.Description),
+		Permissions:      permissionsList,
+		AssignableScopes: scopesList,
+		IsBuiltIn:        types.BoolValue(role.IsBuiltIn),
 	}
 
 	return diags

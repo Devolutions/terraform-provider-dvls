@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Devolutions/go-dvls"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
@@ -221,7 +220,7 @@ func (r *EntryCertificateResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
+	entryBytes, err := fetchCertificateContent(r.client, entrycertificate)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
@@ -245,10 +244,13 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 
 	entrycertificate := newEntryCertificateFromResourceModel(&states)
 
-	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.Id)
+	entrycertificate, err := r.client.Entries.Certificate.Get(entrycertificate.VaultId, entrycertificate.Id)
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, states.Data.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read certificate entry", err.Error())
@@ -261,7 +263,7 @@ func (r *EntryCertificateResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	entryBytes, err := r.client.Entries.Certificate.GetFileContent(entrycertificate.Id)
+	entryBytes, err := fetchCertificateContent(r.client, entrycertificate)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to read certificate entry content", err.Error())
 		return
@@ -283,12 +285,36 @@ func (r *EntryCertificateResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
+	var statePassword types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("password"), &statePassword)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	entrycertificate := newEntryCertificateFromResourceModel(&plans)
+
+	// A nil password keeps the stored one: removing it from the configuration must send an empty value.
+	clearPassword := plans.Data.Password.IsNull() && !statePassword.IsNull()
+	if clearPassword {
+		entrycertificate.Password = new("")
+	}
 
 	_, err := r.client.Entries.Certificate.Update(entrycertificate)
 	if err != nil {
 		resp.Diagnostics.AddError("unable to update certificate entry", err.Error())
 		return
+	}
+
+	if clearPassword {
+		stored, err := r.client.Entries.Certificate.Get(entrycertificate.VaultId, entrycertificate.Id)
+		if err != nil {
+			resp.Diagnostics.AddError("unable to check the certificate password was removed", err.Error())
+			return
+		}
+		if stored.Password != nil && *stored.Password != "" {
+			resp.Diagnostics.AddError("certificate password not removed", "DVLS kept the certificate password after an update that cleared it.")
+			return
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plans.Data)...)
@@ -302,10 +328,10 @@ func (r *EntryCertificateResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	err := r.client.Entries.Certificate.Delete(state.Id.ValueString())
+	err := r.client.Entries.Certificate.Delete(state.VaultId.ValueString(), state.Id.ValueString())
 	if err != nil {
-		if strings.Contains(err.Error(), dvls.SaveResultNotFound.String()) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
 			return
 		}
 		resp.Diagnostics.AddError("unable to delete certificate entry", err.Error())
@@ -314,7 +340,14 @@ func (r *EntryCertificateResource) Delete(ctx context.Context, req resource.Dele
 }
 
 func (r *EntryCertificateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	vaultId, entryId, err := parseEntryImportId(req.ID)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid Resource ID", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultId)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), entryId)...)
 }
 
 func (r *EntryCertificateResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {

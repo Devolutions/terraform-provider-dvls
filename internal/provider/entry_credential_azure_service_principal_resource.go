@@ -166,8 +166,11 @@ func (r *EntryCredentialAzureServicePrincipalResource) Read(ctx context.Context,
 
 	entryCredentialAzureServicePrincipal, err := r.client.Entries.Credential.GetById(entryCredentialAzureServicePrincipal.VaultId, entryCredentialAzureServicePrincipal.Id)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to read azure service principal credential entry", err.Error())
@@ -212,8 +215,11 @@ func (r *EntryCredentialAzureServicePrincipalResource) Delete(ctx context.Contex
 
 	err := r.client.Entries.Credential.Delete(entryCredentialAzureServicePrincipal)
 	if err != nil {
-		if dvls.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
+		if gone, diags := entryGone(ctx, r.client, state.VaultId.ValueString(), err); gone || diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			if gone {
+				resp.State.RemoveResource(ctx)
+			}
 			return
 		}
 		resp.Diagnostics.AddError("unable to delete azure service principal credential entry", err.Error())

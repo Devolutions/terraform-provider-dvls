@@ -24,11 +24,12 @@ type UserGroupDataSource struct {
 }
 
 type UserGroupDataSourceModel struct {
-	Id              types.String `tfsdk:"id"`
-	Name            types.String `tfsdk:"name"`
-	Description     types.String `tfsdk:"description"`
-	Type            types.String `tfsdk:"type"`
-	IsAdministrator types.Bool   `tfsdk:"is_administrator"`
+	Id               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	Description      types.String `tfsdk:"description"`
+	Type             types.String `tfsdk:"type"`
+	IsWorkspaceOwner types.Bool   `tfsdk:"is_workspace_owner"`
+	IsEnabled        types.Bool   `tfsdk:"is_enabled"`
 }
 
 func (d *UserGroupDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -50,8 +51,12 @@ func (d *UserGroupDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 				Description: fmt.Sprintf("The source of the user group. Possible values are %s.", listMapValues(userGroupTypes)),
 				Computed:    true,
 			},
-			"is_administrator": schema.BoolAttribute{
-				Description: "Whether members of the group are DVLS administrators.",
+			"is_workspace_owner": schema.BoolAttribute{
+				Description: "Whether the group makes its members workspace owners.",
+				Computed:    true,
+			},
+			"is_enabled": schema.BoolAttribute{
+				Description: "Whether the user group is enabled.",
 				Computed:    true,
 			},
 		},
@@ -99,11 +104,12 @@ func (d *UserGroupDataSource) Read(ctx context.Context, req datasource.ReadReque
 	}
 
 	*data = UserGroupDataSourceModel{
-		Id:              types.StringValue(group.Id),
-		Name:            types.StringValue(group.Name),
-		Description:     types.StringValue(group.Description),
-		Type:            types.StringValue(userGroupTypes[group.Type]),
-		IsAdministrator: types.BoolValue(group.IsAdministrator),
+		Id:               types.StringValue(group.Id),
+		Name:             types.StringValue(group.Name),
+		Description:      types.StringValue(group.Description),
+		Type:             types.StringValue(userGroupTypes[group.Type]),
+		IsWorkspaceOwner: types.BoolValue(group.IsWorkspaceOwner),
+		IsEnabled:        types.BoolValue(group.IsEnabled),
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
